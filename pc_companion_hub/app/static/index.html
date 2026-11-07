@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05080c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<title>PC-Companion</title>
+</head>
+<body>
+<header>
+  <span id="host">PC-Companion</span>
+  <span id="badge" class="badge">…</span>
+  <button id="lock" title="Display anlassen">☼</button>
+</header>
+<div id="warn" hidden>Agent/Hub-Version passt nicht – bitte beide aktualisieren.</div>
+
+<section id="login" hidden>
+  <p>Hub-Token eingeben</p>
+  <input id="token" type="password" autocomplete="off">
+  <button id="save">Speichern</button>
+</section>
+
+<section id="offline" hidden>
+  <div class="big">PC offline</div>
+  <button id="wake" class="wakebtn">PC aufwecken</button>
+  <div id="wakemsg"></div>
+</section>
+
+<section id="waking" hidden>
+  <div class="spinner"></div>
+  <div class="big">PC startet …</div>
+  <div id="countdown"></div>
+</section>
+
+<main id="live" hidden>
+  <div class="rings">
+    <div class="ring" data-k="gpu_temp"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42"/></svg><div class="val"><b>–</b><small>GPU °C</small></div></div>
+    <div class="ring" data-k="gpu_util"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42"/></svg><div class="val"><b>–</b><small>GPU %</small></div></div>
+    <div class="ring" data-k="vram"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42"/></svg><div class="val"><b>–</b><small>VRAM</small></div></div>
+  </div>
+  <canvas id="graph" width="600" height="120"></canvas>
+  <div class="legend"><span class="c1">GPU-Last</span><span class="c2">CPU-Last</span><span class="c3">GPU-Temp</span> <i>letzte 60 s</i></div>
+  <dl id="grid">
+    <div><dt>GPU Leistung</dt><dd id="gpu_power">–</dd></div>
+    <div><dt>GPU Takt</dt><dd id="gpu_clock">–</dd></div>
+    <div><dt>VRAM</dt><dd id="gpu_vram">–</dd></div>
+    <div><dt>CPU</dt><dd id="cpu">–</dd></div>
+    <div><dt>CPU Temp</dt><dd id="cpu_temp">–</dd></div>
+    <div><dt>RAM</dt><dd id="ram">–</dd></div>
+    <div><dt>Netz ↑ / ↓</dt><dd id="net">–</dd></div>
+    <div><dt>Laufwerke</dt><dd id="disks">–</dd></div>
+    <div><dt>Uptime</dt><dd id="uptime">–</dd></div>
+  </dl>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
