@@ -1,0 +1,71 @@
+import os
+
+os.environ["HUB_NO_AUTOCREATE"] = "1"
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.hub import WAKE_TIMEOUT_S, compute_status
+from app.main import create_app
+from app.wol import magic_packet
+
+OPTS = {"agent_host": "", "agent_token": "a", "ui_token": "ui", "pc_mac": "AA:BB:CC:DD:EE:FF",
+        "broadcast_ip": "127.0.0.1"}
+AUTH = {"Authorization": "Bearer ui"}
+
+
+def test_magic_packet():
+    p = magic_packet("aa-bb-cc-dd-ee-ff")
+    assert len(p) == 102 and p[:6] == b"\xff" * 6 and p[6:12] == bytes.fromhex("aabbccddeeff")
+    with pytest.raises(ValueError):
+        magic_packet("zz")
+
+
+def test_compute_status():
+    assert compute_status(True, 100.0, 101.0) == "online"
+    assert compute_status(False, None, 101.0) == "offline"
+    assert compute_status(False, 100.0, 110.0) == "waking"
+    assert compute_status(False, 100.0, 100.0 + WAKE_TIMEOUT_S + 1) == "offline"
+
+
+@pytest.fixture()
+def client():
+    with TestClient(create_app(dict(OPTS))) as c:
+        yield c
+
+
+def test_api_requires_ui_token(client):
+    assert client.get("/api/status").status_code == 401
+    assert client.post("/api/wake").status_code == 401
+    assert client.get("/api/status", headers=AUTH).json()["status"] == "offline"
+
+
+def test_wake_sets_waking(client):
+    r = client.post("/api/wake", headers=AUTH)
+    assert r.status_code == 200 and r.json()["status"] == "waking"
+    assert client.get("/api/status", headers=AUTH).json()["status"] == "waking"
+
+
+def test_wake_without_mac():
+    opts = dict(OPTS, pc_mac="")
+    with TestClient(create_app(opts)) as c:
+        assert c.post("/api/wake", headers=AUTH).status_code == 400
+
+
+def test_empty_ui_token_rejects_everything():
+    with TestClient(create_app(dict(OPTS, ui_token=""))) as c:
+        assert c.get("/api/status", headers={"Authorization": "Bearer "}).status_code == 401
+
+
+def test_ws_auth_and_initial_message(client):
+    with pytest.raises(Exception):
+        with client.websocket_connect("/ws?token=bad"):
+            pass
+    with client.websocket_connect("/ws?token=ui") as ws:
+        assert ws.receive_json()["status"] == "offline"
+
+
+def test_static_served(client):
+    r = client.get("/")
+    assert r.status_code == 200 and "PC-Companion" in r.text
+    assert client.get("/manifest.webmanifest").status_code == 200

@@ -1,0 +1,11 @@
+{
+  "name": "PC-Companion",
+  "short_name": "PC",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05080c",
+  "theme_color": "#05080c",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
