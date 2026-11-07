@@ -3,95 +3,167 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#05080c">
+<meta name="theme-color" content="#070b10">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 <title>PC-Companion</title>
 </head>
 <body>
-<header>
-  <span id="host">PC-Companion</span>
-  <span id="badge" class="badge">…</span>
-  <button id="lock" title="Display anlassen">☼</button>
+<header class="top">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+    <div><div id="host">PC-Companion</div><div id="sub">–</div></div>
+  </div>
+  <div class="tools">
+    <span id="badge" class="badge" title="Tippen: Token ändern">…</span>
+    <button id="full" class="icon" title="Vollbild" aria-label="Vollbild"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button id="lock" class="icon" title="Display anlassen" aria-label="Display anlassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></button>
+  </div>
 </header>
 <div id="warn" hidden>Agent/Hub-Version passt nicht – bitte beide aktualisieren.</div>
 
-<section id="login" hidden>
-  <p>Hub-Token eingeben</p>
-  <input id="token" type="password" autocomplete="off">
-  <button id="save">Speichern</button>
-  <div id="loginmsg"></div>
+<section id="login" class="center" hidden>
+  <div class="panel narrow">
+    <h2>Anmelden</h2>
+    <p>Hub-Token eingeben</p>
+    <input id="token" type="password" autocomplete="off" placeholder="ui_token">
+    <button id="save" class="primary">Speichern</button>
+    <div id="loginmsg"></div>
+  </div>
 </section>
 
-<section id="offline" hidden>
-  <div class="big">PC offline</div>
-  <button id="wake" class="wakebtn">PC aufwecken</button>
-  <div id="wakemsg"></div>
+<section id="offline" class="center" hidden>
+  <div class="panel narrow">
+    <div class="offline-icon"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></div>
+    <h2>PC ist aus</h2>
+    <button id="wake" class="primary wakebtn">PC aufwecken</button>
+    <div id="wakemsg"></div>
+  </div>
 </section>
 
-<section id="waking" hidden>
-  <div class="spinner"></div>
-  <div class="big">PC startet …</div>
-  <div id="countdown"></div>
+<section id="waking" class="center" hidden>
+  <div class="panel narrow">
+    <div class="spinner"></div>
+    <h2>PC startet …</h2>
+    <div id="countdown"></div>
+  </div>
 </section>
 
 <main id="live" hidden>
-  <div class="rings">
-    <div class="ring" data-k="gpu_temp"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42"/></svg><div class="val"><b>–</b><small>GPU °C</small></div></div>
-    <div class="ring" data-k="gpu_util"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42"/></svg><div class="val"><b>–</b><small>GPU %</small></div></div>
-    <div class="ring" data-k="vram"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42"/></svg><div class="val"><b>–</b><small>VRAM</small></div></div>
+  <!-- ============ Dashboard ============ -->
+  <div class="view" data-view="dash">
+    <div class="hero">
+      <div class="panel ring" data-k="gpu_temp">
+        <div class="rwrap"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><div class="rval"><b>–</b><small>°C</small></div></div>
+        <div class="rl">GPU Temp.</div><div class="rs" id="rs_temp">–</div>
+      </div>
+      <div class="panel ring" data-k="gpu_util">
+        <div class="rwrap"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><div class="rval"><b>–</b><small>%</small></div></div>
+        <div class="rl">GPU Last</div><div class="rs" id="rs_util">–</div>
+      </div>
+      <div class="panel ring" data-k="vram">
+        <div class="rwrap"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg><div class="rval"><b>–</b><small>%</small></div></div>
+        <div class="rl">VRAM</div><div class="rs" id="rs_vram">–</div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <article class="panel card c-gpu">
+        <h3><i class="dot gpu"></i>GPU <span id="gpu_name" class="muted"></span></h3>
+        <canvas id="g_gpu"></canvas>
+        <div class="legend"><span class="k gpu">Last</span><span class="k temp">Temperatur</span><span class="muted">letzte 2 min</span></div>
+        <div class="meter"><div class="mh"><span>Leistung</span><b id="t_power">–</b></div><div class="bar"><i id="bar_power"></i></div></div>
+        <div class="kv"><div><span>Takt</span><b id="gpu_clock">–</b></div><div><span>Lüfter</span><b id="gpu_fan">–</b></div></div>
+      </article>
+
+      <article class="panel card c-cpu">
+        <h3><i class="dot cpu"></i>CPU</h3>
+        <div class="big"><b id="cpu_val">–</b><small>%</small></div>
+        <canvas id="g_cpu"></canvas>
+        <div class="kv"><div><span>Takt</span><b id="cpu_freq">–</b></div><div><span>Temperatur</span><b id="cpu_temp">–</b></div></div>
+        <div class="cores" id="cores" aria-label="Kernauslastung"></div>
+      </article>
+
+      <article class="panel card c-ram">
+        <h3><i class="dot ram"></i>Arbeitsspeicher</h3>
+        <div class="big"><b id="ram_val">–</b><small id="ram_of"></small></div>
+        <canvas id="g_ram"></canvas>
+        <div class="bar"><i id="bar_ram"></i></div>
+      </article>
+
+      <article class="panel card c-net">
+        <h3><i class="dot net"></i>Netzwerk</h3>
+        <div class="kv big2"><div><span>↓ Download</span><b id="net_down">–</b></div><div><span>↑ Upload</span><b id="net_up">–</b></div></div>
+        <canvas id="g_net"></canvas>
+      </article>
+
+      <article class="panel card c-disk">
+        <h3><i class="dot disk"></i>Laufwerke</h3>
+        <div id="disks"></div>
+      </article>
+    </div>
   </div>
-  <canvas id="graph" width="600" height="120"></canvas>
-  <div class="legend"><span class="c1">GPU-Last</span><span class="c2">CPU-Last</span><span class="c3">GPU-Temp</span> <i>letzte 60 s</i></div>
-  <dl id="grid">
-    <div><dt>GPU Leistung</dt><dd id="gpu_power">–</dd></div>
-    <div><dt>GPU Takt</dt><dd id="gpu_clock">–</dd></div>
-    <div><dt>VRAM</dt><dd id="gpu_vram">–</dd></div>
-    <div><dt>CPU</dt><dd id="cpu">–</dd></div>
-    <div><dt>CPU Temp</dt><dd id="cpu_temp">–</dd></div>
-    <div><dt>RAM</dt><dd id="ram">–</dd></div>
-    <div><dt>Netz ↑ / ↓</dt><dd id="net">–</dd></div>
-    <div><dt>Laufwerke</dt><dd id="disks">–</dd></div>
-    <div><dt>Uptime</dt><dd id="uptime">–</dd></div>
-  </dl>
-  <div id="actions">
-    <h2>Aktionen</h2>
-    <div class="row">
-      <button data-act="lock">Sperren</button>
-      <button data-act="sleep" data-confirm="Ruhezustand jetzt starten?">Ruhezustand</button>
-      <button data-act="restart" data-confirm="PC jetzt neu starten?" class="danger">Neustart</button>
-      <button data-act="shutdown" data-confirm="PC jetzt herunterfahren?" class="danger">Herunterfahren</button>
+
+  <!-- ============ Steuerung ============ -->
+  <div class="view" data-view="ctrl" hidden>
+    <div class="panel pad" id="actions">
+      <h3>Energie</h3>
+      <div class="grid4">
+        <button data-act="lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Sperren</button>
+        <button data-act="sleep" data-confirm="Ruhezustand jetzt starten?"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>Ruhezustand</button>
+        <button data-act="restart" data-confirm="PC jetzt neu starten?" class="danger"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/></svg>Neustart</button>
+        <button data-act="shutdown" data-confirm="PC jetzt herunterfahren?" class="danger"><svg viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>Herunterfahren</button>
+      </div>
     </div>
-    <div class="row">
-      <button data-act="media_prev">⏮</button>
-      <button data-act="media_play_pause">⏯</button>
-      <button data-act="media_next">⏭</button>
-      <button data-act="mute">Stumm</button>
+
+    <div class="panel pad">
+      <h3>Medien</h3>
+      <div class="grid4">
+        <button data-act="media_prev"><svg viewBox="0 0 24 24"><path d="M6 5v14M19 5v14L9 12z"/></svg>Zurück</button>
+        <button data-act="media_play_pause"><svg viewBox="0 0 24 24"><path d="M7 5l9 7-9 7zM19 5v14"/></svg>Play/Pause</button>
+        <button data-act="media_next"><svg viewBox="0 0 24 24"><path d="M18 5v14M5 5v14l10-7z"/></svg>Weiter</button>
+        <button data-act="mute"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM17 9l4 6M21 9l-4 6"/></svg>Stumm</button>
+      </div>
+      <div class="vol">
+        <button data-vol="-5" aria-label="Leiser">−</button>
+        <input id="vol" type="range" min="0" max="100" value="20">
+        <span id="volval">20</span>
+        <button data-vol="5" aria-label="Lauter">+</button>
+      </div>
     </div>
-    <div class="row vol">
-      <button data-vol="-5">−</button>
-      <input id="vol" type="range" min="0" max="100" value="20">
-      <span id="volval">20</span>
-      <button data-vol="5">+</button>
+
+    <div class="panel pad">
+      <h3>Link am PC öffnen</h3>
+      <div class="row">
+        <input id="url" type="url" placeholder="https://…">
+        <button id="openurl" class="primary">Öffnen</button>
+      </div>
+      <div id="actmsg"></div>
     </div>
-    <div class="row">
-      <input id="url" type="url" placeholder="Link am PC öffnen (https://…)">
-      <button id="openurl">Öffnen</button>
-    </div>
-    <div id="actmsg"></div>
   </div>
-  <div id="upload">
-    <h2>Datei senden <small id="up_limit"></small></h2>
-    <div class="row">
-      <select id="up_target"></select>
-      <button id="up_pick">Dateien wählen</button>
-      <input id="up_files" type="file" multiple hidden>
+
+  <!-- ============ Dateien ============ -->
+  <div class="view" data-view="files" hidden>
+    <div class="panel pad" id="upload">
+      <h3>Datei senden <small id="up_limit" class="muted"></small></h3>
+      <div class="row">
+        <select id="up_target" aria-label="Ziel"></select>
+        <button id="up_pick" class="primary">Dateien wählen</button>
+        <input id="up_files" type="file" multiple hidden>
+      </div>
+      <div id="up_msg"></div>
+      <div id="up_list"></div>
     </div>
-    <div id="up_msg"></div>
-    <div id="up_list"></div>
   </div>
 </main>
+
+<nav id="tabs" hidden>
+  <button data-tab="dash" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg><span>Dashboard</span></button>
+  <button data-tab="ctrl"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Steuerung</span></button>
+  <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><span>Dateien</span></button>
+</nav>
+
 <script src="app.js"></script>
 <script src="actions.js"></script>
 <script src="upload.js"></script>
