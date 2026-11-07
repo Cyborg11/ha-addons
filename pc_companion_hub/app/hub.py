@@ -49,7 +49,17 @@ class Hub:
             "waking_left": left,
             "wol_configured": bool(self.opts.get("pc_mac")),
             "snapshot": self.snapshot,
+            "tools": self.tools(),
         }
+
+    def tools(self) -> list[dict]:
+        """Kacheln für den Tab „KI-Tools“ (nur http/https-Adressen)."""
+        out = []
+        for t in self.opts.get("tools") or []:
+            url = str(t.get("url", "")).strip()
+            if url.lower().startswith(("http://", "https://")) and t.get("name"):
+                out.append({"name": str(t["name"])[:60], "url": url})
+        return out
 
     async def broadcast(self) -> None:
         if not self.clients:
@@ -153,6 +163,14 @@ class Hub:
                 return r.status_code, {"detail": r.text[:200]}
         except Exception as e:
             return 502, {"detail": f"Upload fehlgeschlagen: {e.__class__.__name__}"}
+
+    async def agent_job_preview(self, job_id: str) -> tuple[int, bytes, str]:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                r = await client.get(f"{self.http_base}/api/job/{job_id}/preview", headers=self._agent_headers())
+            return r.status_code, r.content, r.headers.get("content-type", "application/octet-stream")
+        except Exception:
+            return 502, b"", "text/plain"
 
     def stop(self) -> None:
         if self._upstream:

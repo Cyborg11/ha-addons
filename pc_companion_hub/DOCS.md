@@ -31,6 +31,22 @@ Im Bereich „Datei senden“ Ziel wählen und Dateien aussuchen; der Fortschrit
 
 **Teilen-Menü (Android):** Die PWA über HTTPS installieren (Tailscale, siehe oben), dann erscheint „PC-Companion“ im Teilen-Menü von Chrome-Apps/Galerie/Dateien. Die geteilten Dateien werden hochgeladen, sobald die App offen und der PC online ist; ist er aus, warten sie im Browser-Speicher.
 
+## KI-Tools und Job-Status
+
+**Job-Karte:** Meldet ein Programm (SIG, MediaAI) seinen Status per `report_job` an den Agenten, erscheint oben im Dashboard eine Karte mit Fortschritt, Restzeit und Vorschaubild; fertige und fehlgeschlagene Jobs bleiben 2 Minuten sichtbar. Einbindung in die Programme: `docs/sig-integration.md` im PCCompanion-Repo.
+
+**Tab „KI-Tools“:** Kacheln, die in einem neuen Tab öffnen. Einrichtung über die Option `tools`:
+
+```yaml
+tools:
+  - name: Master Dashboard
+    url: "http://<pc-tailscale-ip-oder-name>:7880"
+  - name: Smart Image Generator
+    url: "http://<pc-tailscale-ip-oder-name>:7871"
+```
+
+Das Master-Dashboard aus ai-core lauscht laut `master.json` auf der Tailscale-Adresse des PCs (Port 7880). Öffne die Links über **dieselbe Adresse**, die du in `tools` einträgst: Die Einmalanmeldung (SSO) von ai-core hängt am Cookie dieser Adresse. Das Handy muss im Tailscale-VPN sein. Eine Einbettung in die Seite selbst (iframe) funktioniert wegen der Cookie-Regeln (`SameSite=Strict`) nicht, daher öffnen die Kacheln die Seiten direkt.
+
 ## Wake-on-LAN-Checkliste
 
 BIOS „Wake on LAN“ aktivieren · Netzwerkadapter: „Nur Magic Packet“ · Windows-Schnellstart aus · LAN-Kabel · MAC notieren.

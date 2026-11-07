@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+- Job-Karte im Dashboard: Fortschritt, ETA, Titel, Vorschaubild und Status (läuft/fertig/Fehler) laufender KI-Jobs von SIG/MediaAI. Benötigt Agent mit Phase-6-Stand.
+- Neuer Tab „KI-Tools“: Kacheln zu eigenen Tools, z. B. dem Master-Dashboard aus ai-core (neue Option `tools`: Liste aus `name` und `url`).
+
 ## 0.4.0
 - Dashboard neu gestaltet: Glas-Panels, Ringe mit Farbwarnung (grün/gelb/rot), Verlaufsgrafiken pro Karte (GPU, CPU, RAM, Netzwerk, 2 min), Kernauslastung, Leistungs- und Laufwerksbalken, Uptime in der Kopfzeile.
 - Navigation per Tab-Leiste (Dashboard / Steuerung / Dateien), Vollbild-Knopf, verbessertes Querformat für den Dauerbetrieb am Handy, größere Bedienelemente mit Symbolen.

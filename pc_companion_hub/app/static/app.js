@@ -19,7 +19,7 @@ function show(view) {
 }
 
 function showTab(name) {
-  tab = ["dash", "ctrl", "files"].includes(name) ? name : "dash";
+  tab = ["dash", "tools", "ctrl", "files"].includes(name) ? name : "dash";
   store.set("pcc_tab", tab);
   document.querySelectorAll(".view").forEach(v => { v.hidden = v.dataset.view !== tab; });
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
@@ -156,7 +156,76 @@ function render(s) {
 
   push("gpu", g.util_pct); push("temp", g.temp_c); push("cpu", c.util_pct);
   push("ram", rf * 100); push("down", net.down_kbps); push("up", net.up_kbps);
+  renderJob(s);
   if (tab === "dash") drawAll();
+}
+
+/* ---------------- Job-Status (KI-Tools) ---------------- */
+const JOB_STATE = { queued: "wartet", running: "läuft", done: "fertig", error: "Fehler" };
+let previewKey = "", previewUrl = null, previewBusy = false;
+
+function fmtEta(sec) {
+  if (sec == null) return "";
+  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  return "noch " + (m ? m + ":" + String(s).padStart(2, "0") + " min" : s + " s");
+}
+
+async function loadPreview(job) {
+  const key = job.job_id + ":" + job.preview_ver;
+  if (previewBusy || key === previewKey) return;
+  previewBusy = true;
+  try {
+    const r = await fetch("api/job/" + encodeURIComponent(job.job_id) + "/preview", { headers: { Authorization: "Bearer " + token } });
+    if (r.ok) {
+      const url = URL.createObjectURL(await r.blob());
+      $("jpic").src = url;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = url; previewKey = key;
+    }
+  } catch (e) { /* nächster Versuch beim nächsten Update */ }
+  previewBusy = false;
+}
+
+function renderJob(s) {
+  const j = s.job, card = $("job");
+  card.hidden = !j;
+  if (!j) { previewKey = ""; return; }
+  card.className = "panel job st-" + j.state;
+  $("jtool").textContent = j.tool;
+  $("jstate").textContent = JOB_STATE[j.state] || j.state;
+  $("jtitle").textContent = (j.state === "error" && j.message) ? j.message : (j.title || "");
+  $("jpct").textContent = Math.round(j.progress * 100) + " %";
+  $("jbar").style.width = Math.round(j.progress * 100) + "%";
+  $("jeta").textContent = j.state === "running" ? fmtEta(j.eta_s) : "";
+  const more = (s.jobs || []).length - 1;
+  $("jmore").textContent = more > 0 ? "+" + more + " weitere" : "";
+  $("jimg").hidden = !j.has_preview;
+  if (j.has_preview) loadPreview(j);
+}
+
+/* ---------------- KI-Tools (Kacheln) ---------------- */
+let toolsKey = "";
+function renderTools(list) {
+  const key = JSON.stringify(list);
+  if (key === toolsKey) return;
+  toolsKey = key;
+  const box = $("tiles");
+  box.innerHTML = "";
+  $("notools").hidden = list.length > 0;
+  for (const t of list) {
+    let u;
+    try { u = new URL(t.url); } catch (e) { continue; }
+    if (u.protocol !== "http:" && u.protocol !== "https:") continue;
+    const a = document.createElement("a");
+    a.className = "tile"; a.href = u.href; a.target = "_blank"; a.rel = "noopener";
+    const d = document.createElement("div");
+    const b = document.createElement("b"); b.textContent = t.name;
+    const sm = document.createElement("small"); sm.textContent = u.host;
+    d.append(b, sm);
+    a.append(d);
+    a.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg>');
+    box.appendChild(a);
+  }
 }
 
 /* ---------------- Verbindung ---------------- */
@@ -166,6 +235,7 @@ function onMessage(m) {
   badge.textContent = { online: "online", offline: "offline", waking: "startet" }[m.status] || m.status;
   badge.className = "badge " + m.status;
   $("warn").hidden = m.api_ok;
+  renderTools(m.tools || []);
   if (m.status === "online") {
     if ($("live").hidden) { show("live"); showTab(tab); }
     if (m.snapshot) render(m.snapshot);
