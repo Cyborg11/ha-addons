@@ -42,3 +42,4 @@ dt{color:var(--dim);font-size:11px}dd{margin:4px 0 0;font-size:16px}
 button.danger{border-color:#5a2222;color:var(--bad)}
 #volval{width:2.2em;text-align:right}
 #actmsg{min-height:1.2em;color:var(--dim);font-size:12px}
+#loginmsg{color:var(--c3);margin-top:10px;font-size:13px}.badge{cursor:pointer}

@@ -86,18 +86,34 @@ function onMessage(m) {
 }
 
 function connect() {
-  if (!token) { show("login"); return; }
+  if (!token) { askToken(""); return; }
   const proto = location.protocol === "https:" ? "wss://" : "ws://";
   const base = location.pathname.replace(/[^/]*$/, "");
   ws = new WebSocket(proto + location.host + base + "ws?token=" + encodeURIComponent(token));
-  ws.onopen = () => { retry = 1000; };
+  let opened = false;
+  ws.onopen = () => { opened = true; retry = 1000; };
   ws.onmessage = e => onMessage(JSON.parse(e.data));
-  ws.onclose = ev => {
-    if (ev.code === 4401) { token = ""; store.set("pcc_ui_token", ""); show("login"); return; }
+  ws.onclose = async ev => {
+    // Der Hub lehnt falsche Tokens schon beim Handshake ab (HTTP 403) – der Browser meldet dann
+    // nur Code 1006. Deshalb per REST prüfen, ob das Token abgelehnt wurde.
+    if (!opened) {
+      try {
+        const r = await fetch("api/status", { headers: { Authorization: "Bearer " + token } });
+        if (r.status === 401) { askToken("Token falsch oder im Add-on (ui_token) nicht gesetzt."); return; }
+      } catch (e) { /* Hub nicht erreichbar */ }
+    }
     $("badge").textContent = "Hub getrennt"; $("badge").className = "badge offline";
     setTimeout(connect, retry); retry = Math.min(retry * 2, 10000);
   };
 }
+
+function askToken(msg) {
+  token = ""; store.set("pcc_ui_token", "");
+  $("loginmsg").textContent = msg || "";
+  $("badge").textContent = "Token nötig"; $("badge").className = "badge offline";
+  show("login");
+}
+$("badge").onclick = () => { if (ws) ws.onclose = null; if (ws) ws.close(); askToken("Neues Token eingeben."); };
 
 $("save").onclick = () => { token = $("token").value.trim(); store.set("pcc_ui_token", token); connect(); };
 $("wake").onclick = async () => {
