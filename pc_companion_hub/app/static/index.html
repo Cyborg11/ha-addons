@@ -54,7 +54,34 @@
     <div><dt>Laufwerke</dt><dd id="disks">–</dd></div>
     <div><dt>Uptime</dt><dd id="uptime">–</dd></div>
   </dl>
+  <div id="actions">
+    <h2>Aktionen</h2>
+    <div class="row">
+      <button data-act="lock">Sperren</button>
+      <button data-act="sleep" data-confirm="Ruhezustand jetzt starten?">Ruhezustand</button>
+      <button data-act="restart" data-confirm="PC jetzt neu starten?" class="danger">Neustart</button>
+      <button data-act="shutdown" data-confirm="PC jetzt herunterfahren?" class="danger">Herunterfahren</button>
+    </div>
+    <div class="row">
+      <button data-act="media_prev">⏮</button>
+      <button data-act="media_play_pause">⏯</button>
+      <button data-act="media_next">⏭</button>
+      <button data-act="mute">Stumm</button>
+    </div>
+    <div class="row vol">
+      <button data-vol="-5">−</button>
+      <input id="vol" type="range" min="0" max="100" value="20">
+      <span id="volval">20</span>
+      <button data-vol="5">+</button>
+    </div>
+    <div class="row">
+      <input id="url" type="url" placeholder="Link am PC öffnen (https://…)">
+      <button id="openurl">Öffnen</button>
+    </div>
+    <div id="actmsg"></div>
+  </div>
 </main>
 <script src="app.js"></script>
+<script src="actions.js"></script>
 </body>
 </html>

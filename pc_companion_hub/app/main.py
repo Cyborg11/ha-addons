@@ -9,7 +9,8 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .hub import Hub
@@ -17,6 +18,10 @@ from .wol import send_magic_packet
 
 log = logging.getLogger("pc-companion-hub")
 STATIC = Path(__file__).parent / "static"
+ALLOWED_ACTIONS = {
+    "lock", "sleep", "shutdown", "restart", "cancel_shutdown", "volume", "mute",
+    "media_play_pause", "media_next", "media_prev", "open_url",
+}
 
 
 def load_options() -> dict:
@@ -69,6 +74,15 @@ def create_app(opts: dict | None = None) -> FastAPI:
             raise HTTPException(status_code=502, detail=f"Senden fehlgeschlagen: {e}")
         hub.start_wake()
         return {"ok": True, "status": hub.status}
+
+    @app.post("/api/action/{name}", dependencies=[Depends(require_ui_token)])
+    async def action(name: str, body: dict | None = Body(default=None)):
+        if name not in ALLOWED_ACTIONS:
+            raise HTTPException(status_code=404, detail="unbekannte Aktion")
+        if hub.status != "online":
+            raise HTTPException(status_code=409, detail="PC ist nicht online")
+        code, data = await hub.agent_action(name, body)
+        return JSONResponse(data, status_code=code)
 
     @app.websocket("/ws")
     async def ws(websocket: WebSocket):
