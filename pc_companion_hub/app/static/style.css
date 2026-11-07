@@ -140,3 +140,26 @@ canvas{display:block;width:100%;height:84px;border-radius:12px;background:rgba(0
   #tabs{padding:4px 12px}#tabs button{flex-direction:row;justify-content:center;gap:8px;padding:6px 0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Job-Karte & KI-Tools ---------- */
+.job{display:flex;gap:14px;padding:14px;margin-bottom:12px;--jc:var(--net)}
+.job.st-done{--jc:var(--ok)}.job.st-error{--jc:var(--crit)}.job.st-queued{--jc:var(--warn)}
+.jimg{flex:0 0 88px;height:88px;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.3);border:1px solid var(--line)}
+.jimg img{width:100%;height:100%;object-fit:cover;display:block}
+.jbody{flex:1;min-width:0}
+.jhead{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px}
+.tool{font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--jc)}
+.jstate{padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--jc) 16%,transparent);color:var(--jc);font-weight:600}
+.jtitle{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:10px;min-height:1.2em}
+.job .bar i{background:var(--jc)}
+.job.st-running .bar i{background-image:linear-gradient(90deg,transparent 0 40%,rgba(255,255,255,.25) 50%,transparent 60% 100%);background-size:200% 100%;background-color:var(--jc);animation:shine 1.6s linear infinite}
+@keyframes shine{to{background-position:-200% 0}}
+.jfoot{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:7px}.jfoot b{color:var(--fg);font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.tile{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px;border-radius:14px;text-decoration:none;color:var(--fg);
+  background:rgba(255,255,255,.05);border:1px solid var(--line);transition:transform .1s,background .2s}
+.tile:active{transform:scale(.97);background:rgba(255,255,255,.1)}
+.tile b{display:block;font-size:15px}.tile small{display:block;color:var(--dim);font-size:11px;margin-top:3px;word-break:break-all}
+.tile svg{flex:0 0 22px;color:var(--ok)}
+.hint{color:var(--dim);font-size:13px;line-height:1.5;margin:0}.hint code{background:rgba(255,255,255,.07);padding:1px 6px;border-radius:6px}
+@media (orientation:landscape) and (max-height:540px){.jimg{flex-basis:56px;height:56px}.job{padding:8px 12px}}

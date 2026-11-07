@@ -123,3 +123,30 @@ def test_upload_streams_body_to_agent(client):
     r = client.post("/api/upload?filename=foto.jpg&target=nas", content=b"abc" * 1000, headers=AUTH)
     assert r.status_code == 200 and r.json()["size"] == 3000
     assert got["body"] == b"abc" * 1000 and got["args"] == ("foto.jpg", "nas", "3000")
+
+
+def test_tools_in_message_only_http_urls():
+    opts = dict(OPTS, tools=[
+        {"name": "Master Dashboard", "url": "http://100.1.2.3:7880"},
+        {"name": "Böse", "url": "javascript:alert(1)"},
+        {"name": "", "url": "http://x"},
+        {"name": "Ohne Schema", "url": "ftp://x"},
+    ])
+    with TestClient(create_app(opts)) as c:
+        tools = c.get("/api/status", headers=AUTH).json()["tools"]
+    assert tools == [{"name": "Master Dashboard", "url": "http://100.1.2.3:7880"}]
+
+
+def test_preview_proxy_auth_and_forward(client):
+    assert client.get("/api/job/abc/preview").status_code == 401
+    assert client.get("/api/job/abc/preview", headers=AUTH).status_code == 404  # PC offline
+    hub = client.app.state.hub
+    hub.status = "online"
+
+    async def fake(job_id):
+        return 200, b"PNGDATA", "image/png"
+
+    hub.agent_job_preview = fake
+    r = client.get("/api/job/abc/preview", headers=AUTH)
+    assert r.status_code == 200 and r.content == b"PNGDATA" and r.headers["content-type"] == "image/png"
+    assert client.get("/api/job/..%2Fx/preview", headers=AUTH).status_code == 404

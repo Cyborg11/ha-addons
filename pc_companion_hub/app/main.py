@@ -6,11 +6,12 @@ import hmac
 import json
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .hub import Hub
@@ -97,6 +98,15 @@ def create_app(opts: dict | None = None) -> FastAPI:
             raise HTTPException(status_code=409, detail="PC ist nicht online")
         code, data = await hub.agent_upload(request.stream(), filename, target, request.headers.get("content-length"))
         return JSONResponse(data, status_code=code)
+
+    @app.get("/api/job/{job_id}/preview", dependencies=[Depends(require_ui_token)])
+    async def job_preview(job_id: str):
+        if hub.status != "online" or not re.fullmatch(r"[A-Za-z0-9._:-]{1,80}", job_id):
+            raise HTTPException(status_code=404, detail="kein Vorschaubild")
+        code, data, ctype = await hub.agent_job_preview(job_id)
+        if code != 200:
+            raise HTTPException(status_code=404, detail="kein Vorschaubild")
+        return Response(content=data, media_type=ctype, headers={"Cache-Control": "no-store"})
 
     @app.websocket("/ws")
     async def ws(websocket: WebSocket):
