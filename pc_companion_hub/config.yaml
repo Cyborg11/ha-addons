@@ -1,5 +1,5 @@
 name: "PC-Companion Hub"
-version: "0.2.1"
+version: "0.2.2"
 slug: pc_companion_hub
 description: "Dashboard und Wake-on-LAN für den PC-Companion-Agenten (Gaming-PC)"
 url: "https://github.com/Cyborg11/PCCompanion"
@@ -10,6 +10,11 @@ init: false
 startup: application
 boot: auto
 host_network: true
+webui: "http://[HOST]:[PORT:8099]"
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: "Weboberfläche (PWA)"
 options:
   agent_host: ""
   agent_port: 8765
