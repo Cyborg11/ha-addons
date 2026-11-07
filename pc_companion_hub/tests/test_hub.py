@@ -101,3 +101,25 @@ def test_agent_error_is_passed_through(client):
     hub.agent_action = fake
     r = client.post("/api/action/open_url", headers=AUTH, json={"url": "file:///x"})
     assert r.status_code == 400 and "http" in r.json()["detail"]
+
+
+def test_upload_requires_auth_and_online(client):
+    assert client.post("/api/upload?filename=a.txt", content=b"x").status_code == 401
+    assert client.post("/api/upload?filename=a.txt", content=b"x", headers=AUTH).status_code == 409
+    assert client.get("/api/upload/targets", headers=AUTH).status_code == 409
+
+
+def test_upload_streams_body_to_agent(client):
+    hub = client.app.state.hub
+    hub.status = "online"
+    got = {}
+
+    async def fake(stream, filename, target, content_length):
+        got["body"] = b"".join([c async for c in stream])
+        got["args"] = (filename, target, content_length)
+        return 200, {"ok": True, "filename": filename, "size": len(got["body"])}
+
+    hub.agent_upload = fake
+    r = client.post("/api/upload?filename=foto.jpg&target=nas", content=b"abc" * 1000, headers=AUTH)
+    assert r.status_code == 200 and r.json()["size"] == 3000
+    assert got["body"] == b"abc" * 1000 and got["args"] == ("foto.jpg", "nas", "3000")

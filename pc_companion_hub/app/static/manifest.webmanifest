@@ -7,5 +7,11 @@
   "orientation": "any",
   "background_color": "#05080c",
   "theme_color": "#05080c",
+  "share_target": {
+    "action": "./share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": { "files": [{ "name": "files", "accept": ["*/*"] }] }
+  },
   "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
 }

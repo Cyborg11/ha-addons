@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+- Dateitransfer: Bereich „Datei senden“ (Zielwahl, Mehrfachauswahl, Fortschritt); der Hub streamt den Upload direkt an den Agenten.
+- Android-„Teilen“-Ziel (`share_target`): Dateien aus dem Teilen-Menü landen im Zielordner (nur als installierte PWA über HTTPS). Benötigt Agent mit Phase-5-Stand.
+
 ## 0.2.2
 - Button „Benutzeroberfläche öffnen“ auf der Add-on-Übersicht (`webui`, Port 8099).
 

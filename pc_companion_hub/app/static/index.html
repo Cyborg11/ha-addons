@@ -81,8 +81,19 @@
     </div>
     <div id="actmsg"></div>
   </div>
+  <div id="upload">
+    <h2>Datei senden <small id="up_limit"></small></h2>
+    <div class="row">
+      <select id="up_target"></select>
+      <button id="up_pick">Dateien wählen</button>
+      <input id="up_files" type="file" multiple hidden>
+    </div>
+    <div id="up_msg"></div>
+    <div id="up_list"></div>
+  </div>
 </main>
 <script src="app.js"></script>
 <script src="actions.js"></script>
+<script src="upload.js"></script>
 </body>
 </html>
