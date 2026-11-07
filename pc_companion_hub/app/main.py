@@ -9,7 +9,7 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Body, Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -82,6 +82,20 @@ def create_app(opts: dict | None = None) -> FastAPI:
         if hub.status != "online":
             raise HTTPException(status_code=409, detail="PC ist nicht online")
         code, data = await hub.agent_action(name, body)
+        return JSONResponse(data, status_code=code)
+
+    @app.get("/api/upload/targets", dependencies=[Depends(require_ui_token)])
+    async def upload_targets():
+        if hub.status != "online":
+            raise HTTPException(status_code=409, detail="PC ist nicht online")
+        code, data = await hub.agent_upload_targets()
+        return JSONResponse(data, status_code=code)
+
+    @app.post("/api/upload", dependencies=[Depends(require_ui_token)])
+    async def upload(request: Request, filename: str, target: str | None = None):
+        if hub.status != "online":
+            raise HTTPException(status_code=409, detail="PC ist nicht online")
+        code, data = await hub.agent_upload(request.stream(), filename, target, request.headers.get("content-length"))
         return JSONResponse(data, status_code=code)
 
     @app.websocket("/ws")

@@ -124,6 +124,36 @@ class Hub:
         except Exception as e:
             return 502, {"detail": f"Agent nicht erreichbar: {e.__class__.__name__}"}
 
+    def _agent_headers(self) -> dict:
+        return {"Authorization": f"Bearer {self.opts.get('agent_token', '')}"}
+
+    async def agent_upload_targets(self) -> tuple[int, dict]:
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                r = await client.get(f"{self.http_base}/api/upload/targets", headers=self._agent_headers())
+            return r.status_code, r.json()
+        except Exception as e:
+            return 502, {"detail": f"Agent nicht erreichbar: {e.__class__.__name__}"}
+
+    async def agent_upload(self, stream, filename: str, target: str | None, content_length: str | None) -> tuple[int, dict]:
+        """Streamt den Request-Body direkt an den Agenten weiter (nichts landet auf dem Pi)."""
+        headers = {**self._agent_headers(), "Content-Type": "application/octet-stream"}
+        if content_length:
+            headers["Content-Length"] = content_length
+        params = {"filename": filename}
+        if target:
+            params["target"] = target
+        try:
+            timeout = httpx.Timeout(connect=5.0, read=900.0, write=900.0, pool=5.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                r = await client.post(f"{self.http_base}/api/upload", params=params, headers=headers, content=stream)
+            try:
+                return r.status_code, r.json()
+            except Exception:
+                return r.status_code, {"detail": r.text[:200]}
+        except Exception as e:
+            return 502, {"detail": f"Upload fehlgeschlagen: {e.__class__.__name__}"}
+
     def stop(self) -> None:
         if self._upstream:
             self._upstream.cancel()

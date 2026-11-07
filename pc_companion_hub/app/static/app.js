@@ -67,6 +67,7 @@ function drawGraph() {
 }
 
 function onMessage(m) {
+  window.dispatchEvent(new CustomEvent("pcc:status", { detail: m.status }));
   const badge = $("badge");
   badge.textContent = { online: "online", offline: "offline", waking: "startet" }[m.status] || m.status;
   badge.className = "badge " + m.status;

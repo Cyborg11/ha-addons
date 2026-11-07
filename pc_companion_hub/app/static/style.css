@@ -43,3 +43,11 @@ button.danger{border-color:#5a2222;color:var(--bad)}
 #volval{width:2.2em;text-align:right}
 #actmsg{min-height:1.2em;color:var(--dim);font-size:12px}
 #loginmsg{color:var(--c3);margin-top:10px;font-size:13px}.badge{cursor:pointer}
+#upload{margin-top:16px}#upload h2{font-size:13px;color:var(--dim);margin:0 0 8px;text-transform:uppercase;letter-spacing:.1em}
+#upload h2 small{text-transform:none;letter-spacing:0}
+#upload .row{display:flex;gap:8px;align-items:center}#upload .row button{flex:1;min-height:44px}
+select{background:var(--panel);color:var(--fg);border:1px solid #234;border-radius:8px;padding:10px;font:inherit;min-height:44px}
+#up_msg{color:var(--c3);font-size:12px;min-height:1.2em;margin-top:6px}
+.uprow{display:grid;grid-template-columns:1fr 90px 70px;gap:8px;align-items:center;font-size:12px;padding:6px 0;border-bottom:1px solid #15212b}
+.uprow .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.uprow progress{width:100%}
+.uprow.ok .s{color:var(--c1)}.uprow.err .s{color:var(--bad)}
