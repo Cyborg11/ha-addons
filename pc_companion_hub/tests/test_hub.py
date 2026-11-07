@@ -69,3 +69,35 @@ def test_static_served(client):
     r = client.get("/")
     assert r.status_code == 200 and "PC-Companion" in r.text
     assert client.get("/manifest.webmanifest").status_code == 200
+
+
+def test_action_requires_auth_and_online(client):
+    assert client.post("/api/action/lock").status_code == 401
+    assert client.post("/api/action/lock", headers=AUTH).status_code == 409  # PC offline
+    assert client.post("/api/action/rm_rf", headers=AUTH).status_code == 404
+
+
+def test_action_is_forwarded(client):
+    hub = client.app.state.hub
+    hub.status = "online"
+    seen = []
+
+    async def fake(name, body):
+        seen.append((name, body))
+        return 200, {"ok": True, "action": name}
+
+    hub.agent_action = fake
+    r = client.post("/api/action/volume", headers=AUTH, json={"level": 25})
+    assert r.status_code == 200 and seen == [("volume", {"level": 25})]
+
+
+def test_agent_error_is_passed_through(client):
+    hub = client.app.state.hub
+    hub.status = "online"
+
+    async def fake(name, body):
+        return 400, {"detail": "Nur http(s)-URLs erlaubt"}
+
+    hub.agent_action = fake
+    r = client.post("/api/action/open_url", headers=AUTH, json={"url": "file:///x"})
+    assert r.status_code == 400 and "http" in r.json()["detail"]

@@ -107,6 +107,23 @@ class Hub:
                 await self.poll_once(client)
                 await asyncio.sleep(POLL_INTERVAL_S)
 
+    async def agent_action(self, name: str, body: dict | None) -> tuple[int, dict]:
+        """Leitet eine Aktion an den Agenten weiter (Agent-Token bleibt im Hub)."""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                r = await client.post(
+                    f"{self.http_base}/api/action/{name}",
+                    json=body or {},
+                    headers={"Authorization": f"Bearer {self.opts.get('agent_token', '')}"},
+                )
+            try:
+                data = r.json()
+            except Exception:
+                data = {"detail": r.text[:200]}
+            return r.status_code, data
+        except Exception as e:
+            return 502, {"detail": f"Agent nicht erreichbar: {e.__class__.__name__}"}
+
     def stop(self) -> None:
         if self._upstream:
             self._upstream.cancel()
