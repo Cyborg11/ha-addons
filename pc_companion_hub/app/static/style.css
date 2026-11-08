@@ -163,3 +163,19 @@ canvas{display:block;width:100%;height:84px;border-radius:12px;background:rgba(0
 .tile svg{flex:0 0 22px;color:var(--ok)}
 .hint{color:var(--dim);font-size:13px;line-height:1.5;margin:0}.hint code{background:rgba(255,255,255,.07);padding:1px 6px;border-radius:6px}
 @media (orientation:landscape) and (max-height:540px){.jimg{flex-basis:56px;height:56px}.job{padding:8px 12px}}
+
+/* ---------- Anmeldung / Geräte ---------- */
+.linkbtn{background:none;border:0;color:var(--dim);text-decoration:underline;min-height:0;padding:10px 0 0;font-size:13px;box-shadow:none}
+#loginform input{margin-bottom:12px}
+.devrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.devrow:last-child{border-bottom:0}
+.devrow button{flex:0 0 auto;min-height:38px;padding:6px 12px;font-size:13px}
+.devrow .me{white-space:nowrap;font-size:11px;color:var(--ok);border:1px solid currentColor;border-radius:99px;padding:1px 7px;margin-left:4px}
+.devbtns{margin-top:14px;flex-wrap:wrap}
+#pair_box{margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+#pair_box label{width:100%;text-align:left;font-size:12px}
+#pair_qr{background:#fff;padding:8px;border-radius:12px;max-width:100%;height:auto}
+#pair_url{font-size:11px;word-break:break-all;color:var(--dim)}
+#pair_hint,#dev_msg{color:var(--warn);font-size:13px}#dev_msg{margin-top:10px}
+.devrow button,.devbtns button:not(.primary),#pair_close{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
+.devrow button:active,.devbtns button:not(.primary):active,#pair_close:active{background:rgba(255,255,255,.12)}

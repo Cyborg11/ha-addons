@@ -1,5 +1,5 @@
 name: "PC-Companion Hub"
-version: "0.6.0"
+version: "0.7.0"
 slug: pc_companion_hub
 description: "Dashboard und Wake-on-LAN für den PC-Companion-Agenten (Gaming-PC)"
 url: "https://github.com/Cyborg11/PCCompanion"
@@ -11,6 +11,10 @@ startup: application
 boot: auto
 host_network: true
 webui: "http://[HOST]:[PORT:8099]"
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:monitor-dashboard
+panel_title: PC-Companion
 ports:
   8099/tcp: 8099
 ports_description:
@@ -22,6 +26,7 @@ options:
   pc_mac: ""
   broadcast_ip: "255.255.255.255"
   ui_token: ""
+  pin: ""
   public_url: ""
   tools: []
 schema:
@@ -30,7 +35,8 @@ schema:
   agent_token: password
   pc_mac: str
   broadcast_ip: str
-  ui_token: password
+  ui_token: password?
+  pin: password?
   public_url: str?
   tools:
     - name: str

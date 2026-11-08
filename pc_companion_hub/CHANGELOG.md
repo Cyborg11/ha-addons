@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0
+- **PIN-Anmeldung:** Neue Option `pin` (z. B. 6 Ziffern). Das Handy meldet sich einmal mit der PIN an und bekommt ein langes Gerätetoken, das im Add-on-Datenordner nur als Hash liegt. `ui_token` bleibt gültig (Notzugang, ältere Geräte), ist aber nicht mehr Pflicht, wenn eine PIN gesetzt ist.
+- **Sperre:** Nach 5 Fehlversuchen sperrt der Hub die Anmeldung dieser Adresse 15 Minuten, bei sehr vielen Fehlversuchen insgesamt 1 Stunde für alle.
+- **QR-Kopplung:** Tab „Steuerung“ → „Geräte & Anmeldung“ → „Gerät per QR koppeln“. Der Code gilt 5 Minuten und nur einmal; das Handy ist danach ohne Eingabe angemeldet.
+- **Geräteverwaltung:** Liste der gekoppelten Geräte mit „Entfernen“ (sofort wirksam, auch für offene Verbindungen) und „Abmelden“.
+- **Home-Assistant-Ingress:** Das Add-on erscheint in der HA-Seitenleiste („PC-Companion“) und der Knopf „Benutzeroberfläche öffnen“ nutzt den HA-Login, ohne PIN. Der direkte Zugang über Port 8099 (PWA, Tailscale) bleibt bestehen.
+- Neue Abhängigkeit `segno` (QR-Code).
+
 ## 0.6.0
 - Neuer Knopf „Agent neu starten“ im Tab „Steuerung“: startet nur den PC-Companion-Agenten neu, nicht den PC. Benötigt Agent mit Aktion `restart_agent` und die Aufgabe „PC-Companion Restart“ (`install_autostart.ps1` erneut ausführen).
 
