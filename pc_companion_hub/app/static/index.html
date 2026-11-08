@@ -117,6 +117,14 @@
         <h3><i class="dot disk"></i>Laufwerke</h3>
         <div id="disks"></div>
       </article>
+
+      <article class="panel card c-hist" id="histcard">
+        <h3>Verlauf <span class="muted">seit dem Start des Hubs, max. 14 Tage</span></h3>
+        <div class="seg" id="h_range"></div>
+        <div class="seg" id="h_metric"></div>
+        <canvas id="g_hist"></canvas>
+        <div class="muted" id="h_sum"></div>
+      </article>
     </div>
   </div>
 
@@ -229,5 +237,6 @@
 <script src="actions.js"></script>
 <script src="upload.js"></script>
 <script src="devices.js"></script>
+<script src="history.js"></script>
 </body>
 </html>

@@ -35,6 +35,7 @@ class Hub:
         self.snapshot: dict | None = None
         self.wake_started: float | None = None
         self.clients: set = set()
+        self.on_snapshot = None               # Rückruf(pc_id, snapshot), z. B. für den Langzeitverlauf
         self._upstream: asyncio.Task | None = None
 
     # --- Zustand -----------------------------------------------------------
@@ -87,6 +88,11 @@ class Hub:
             async with websockets.connect(url, open_timeout=3) as ws:
                 async for raw in ws:
                     self.snapshot = json.loads(raw)
+                    if self.on_snapshot:
+                        try:
+                            self.on_snapshot(self.pc_id, self.snapshot)
+                        except Exception:
+                            pass
                     await self.broadcast()
         except Exception:
             pass

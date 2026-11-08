@@ -14,7 +14,7 @@ from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Reques
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import audit as audit_mod, auth
+from . import audit as audit_mod, auth, history as history_mod
 from .hub import Hub
 from .wol import send_magic_packet
 
@@ -101,6 +101,9 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     limiter = auth.Limiter()
     ws_devices: dict[WebSocket, str] = {}
     audit = audit_mod.AuditLog(data_dir / "audit.log")
+    history = history_mod.History(data_dir / "history.db")
+    for h in hubs.values():
+        h.on_snapshot = history.feed
     if not opts.get("ui_token") and not opts.get("pin"):
         log.warning("Weder pin noch ui_token sind gesetzt – alle API-Aufrufe werden abgelehnt.")
     elif opts.get("pin") and len(str(opts["pin"])) < 6:
@@ -278,6 +281,10 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     @app.get("/api/status", dependencies=[Depends(require_ui_token)])
     def status(hub: Hub = Depends(get_hub)):
         return hub.message()
+
+    @app.get("/api/history", dependencies=[Depends(require_ui_token)])
+    def history_query(hours: float = 1, hub: Hub = Depends(get_hub)):
+        return history.query(hub.pc_id, hours)
 
     @app.get("/api/pcs", dependencies=[Depends(require_ui_token)])
     def pcs(request: Request):

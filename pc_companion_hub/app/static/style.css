@@ -204,3 +204,11 @@ body.readonly .view[data-view="ctrl"],body.readonly .view[data-view="files"]{dis
 .auditrow{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.35}.auditrow:last-child{border-bottom:0}
 .auditrow small{display:block;color:var(--dim)}.auditrow.bad b{color:var(--crit)}
 #audit_reload{margin-top:12px}
+
+/* ---------- Verlauf ---------- */
+.c-hist{grid-column:1/-1}
+.c-hist canvas{height:170px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.segbtn{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:12px;font-weight:600;min-height:34px}
+.segbtn.on{background:rgba(52,232,164,.12);border-color:rgba(52,232,164,.4);color:var(--ok)}
+#h_sum{font-size:12px}
