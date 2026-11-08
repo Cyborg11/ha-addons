@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.10.0
+- **Langzeitverlauf:** Neue Karte „Verlauf“ im Dashboard mit GPU-Last, GPU-Temperatur, GPU-Leistung, VRAM, CPU und RAM über 1 Std., 6 Std., 24 Std. oder 7 Tage, mit Mittel-, Höchst- und Tiefstwert. Der Hub speichert dafür alle 30 s je PC einen Messwert (Temperatur und Leistung als Spitzenwert) in `/data/history.db`, 14 Tage lang. Der Verlauf beginnt mit dem Update; Zeiten, in denen der PC aus war, erscheinen als Lücke.
+
 ## 0.9.0
 - **Rechte je Gerät:** „Vollzugriff“ oder „Nur ansehen“ (z. B. für ein Wanddisplay oder Familienmitglieder). Nur-Ansicht-Geräte sehen Dashboard und KI-Tools, aber keine Steuerung, keinen Dateitransfer und kein Aufwecken; der Hub lehnt solche Aufrufe auch direkt ab (403). Die Rolle wählst du beim QR-Koppeln oder änderst sie in der Geräteliste. PIN-Anmeldungen und bestehende Geräte behalten Vollzugriff.
 - **Protokoll:** Tab „Steuerung“ → „Protokoll“ zeigt die letzten Aktionen mit Zeit, Gerät, PC und Ergebnis (Aktionen, Aufwecken, Dateitransfer, Kopplungen, Rollenwechsel, fehlgeschlagene Anmeldungen). Gespeichert in `/data/audit.log`, begrenzt auf die letzten ca. 1000 Einträge; PINs und Codes werden nie protokolliert.

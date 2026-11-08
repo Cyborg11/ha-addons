@@ -1,6 +1,6 @@
 // Minimaler Service Worker: App-Shell cachen (nur HTTPS/localhost aktiv). API und WS nie cachen.
-const CACHE = "pcc-shell-v9";
-const SHELL = ["./", "index.html", "style.css", "app.js", "actions.js", "upload.js", "devices.js", "manifest.webmanifest", "icon.svg"];
+const CACHE = "pcc-shell-v10";
+const SHELL = ["./", "index.html", "style.css", "app.js", "actions.js", "upload.js", "devices.js", "history.js", "manifest.webmanifest", "icon.svg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
