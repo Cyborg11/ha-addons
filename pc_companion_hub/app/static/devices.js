@@ -155,6 +155,24 @@
   $("pair_role").onchange = startPair;
   $("pair_close").onclick = stopPair;
 
+  /* ---- Benachrichtigungen ---- */
+  async function loadNotify() {
+    try {
+      const d = await api("api/notify");
+      $("nt_info").textContent = d.configured
+        ? "Eingerichtet über " + d.service + ". Gemeldet werden: KI-Jobs " + (d.jobs ? "an" : "aus") + ", PC online/offline " + (d.pc_state ? "an" : "aus")
+          + ", GPU-Warnung " + (d.temp_c ? "ab " + d.temp_c + " °C" : "aus") + "." + (d.last_error ? " Letzter Fehler: " + d.last_error : "")
+        : "Nicht eingerichtet. Im Add-on die Option notify_service setzen (z. B. notify.mobile_app_pixel_8), siehe Dokumentation.";
+      $("nt_test").hidden = !d.configured;
+    } catch (e) { $("nt_info").textContent = e.message; }
+  }
+  $("nt_test").onclick = async () => {
+    $("nt_msg").textContent = "Sende …";
+    try { await api("api/notify/test", "POST", {}); $("nt_msg").textContent = "Gesendet ✓ – kommt gleich auf dem Handy an."; }
+    catch (e) { $("nt_msg").textContent = e.message; }
+    loadNotify();
+  };
+
   /* ---- Protokoll ---- */
   async function loadAudit() {
     const box = $("audit_list");
@@ -181,6 +199,6 @@
 
   // Liste laden, sobald der Tab „Steuerung“ sichtbar wird
   const view = document.querySelector('[data-view="ctrl"]');
-  new MutationObserver(() => { if (!view.hidden) { load(); loadAudit(); } }).observe(view, { attributes: true, attributeFilter: ["hidden"] });
-  if (!view.hidden) { load(); loadAudit(); }
+  new MutationObserver(() => { if (!view.hidden) { load(); loadAudit(); loadNotify(); } }).observe(view, { attributes: true, attributeFilter: ["hidden"] });
+  if (!view.hidden) { load(); loadAudit(); loadNotify(); }
 })();

@@ -13,6 +13,16 @@ Zeigt die Live-Werte deines Gaming-PCs (vom [PC-Companion-Agenten](https://githu
 | `ui_token` | Langes Token als Notzugang (Anmeldefeld „Stattdessen Token eingeben“, ältere Geräte). Mindestens eines von `pin` und `ui_token` muss gesetzt sein, sonst lehnt der Hub alles ab. |
 | `public_url` | Optional: Adresse, unter der das Handy den Hub erreicht, z. B. `https://pi.<tailnet>.ts.net`. Wird für die QR-Kopplung vorgeschlagen, wenn du die Oberfläche über Home Assistant öffnest. |
 
+## Benachrichtigungen
+
+Der Hub kann dir über die Home-Assistant-Companion-App Nachrichten schicken. Einrichtung:
+
+1. In Home Assistant den Namen deines Handy-Dienstes ermitteln: Entwicklerwerkzeuge → Aktionen → „notify.mobile_app_“ eingeben, z. B. `notify.mobile_app_pixel_8`.
+2. Im Add-on `notify_service` auf diesen Namen setzen und speichern.
+3. Im Tab „Steuerung“ → „Benachrichtigungen“ auf „Testbenachrichtigung senden“ tippen.
+
+Gemeldet wird: **KI-Job fertig/fehlgeschlagen** (`notify_jobs`), **PC online/offline** (`notify_pc_state`; der Zustand muss 20 s stabil sein, nach einem Herunterfahren oder Ruhezustand über den Hub gibt es keine Offline-Meldung) und **GPU zu heiß** (`notify_temp_c`, Standard 85 °C, 0 schaltet ab; nach 60 s über der Grenze, höchstens alle 30 Minuten). Beim Start des Hubs werden bestehende Zustände und alte Jobs nicht gemeldet.
+
 ## Verlauf
 
 Die Karte „Verlauf“ unten im Dashboard zeigt Kennzahlen über Stunden bis 7 Tage. Der Hub sammelt sie selbst (alle 30 s je PC, 14 Tage lang, `/data/history.db`); es ist keine Änderung am Agenten nötig. Der Verlauf beginnt, sobald das Add-on 0.10.0 läuft. Er überlebt Neustarts und Updates des Add-ons, wird aber mit dem Add-on gelöscht, wenn du es deinstallierst.
