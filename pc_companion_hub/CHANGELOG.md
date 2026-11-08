@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.0
+- Neuer Knopf „Agent neu starten“ im Tab „Steuerung“: startet nur den PC-Companion-Agenten neu, nicht den PC. Benötigt Agent mit Aktion `restart_agent` und die Aufgabe „PC-Companion Restart“ (`install_autostart.ps1` erneut ausführen).
+
 ## 0.5.0
 - Job-Karte im Dashboard: Fortschritt, ETA, Titel, Vorschaubild und Status (läuft/fertig/Fehler) laufender KI-Jobs von SIG/MediaAI. Benötigt Agent mit Phase-6-Stand.
 - Neuer Tab „KI-Tools“: Kacheln zu eigenen Tools, z. B. dem Master-Dashboard aus ai-core (neue Option `tools`: Liste aus `name` und `url`).
