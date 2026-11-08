@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0
+- **Rechte je Gerät:** „Vollzugriff“ oder „Nur ansehen“ (z. B. für ein Wanddisplay oder Familienmitglieder). Nur-Ansicht-Geräte sehen Dashboard und KI-Tools, aber keine Steuerung, keinen Dateitransfer und kein Aufwecken; der Hub lehnt solche Aufrufe auch direkt ab (403). Die Rolle wählst du beim QR-Koppeln oder änderst sie in der Geräteliste. PIN-Anmeldungen und bestehende Geräte behalten Vollzugriff.
+- **Protokoll:** Tab „Steuerung“ → „Protokoll“ zeigt die letzten Aktionen mit Zeit, Gerät, PC und Ergebnis (Aktionen, Aufwecken, Dateitransfer, Kopplungen, Rollenwechsel, fehlgeschlagene Anmeldungen). Gespeichert in `/data/audit.log`, begrenzt auf die letzten ca. 1000 Einträge; PINs und Codes werden nie protokolliert.
+
 ## 0.8.0
 - **Mehrere PCs:** Neue Option `pcs` (Liste mit `name`, `host`, `port`, `token`, `mac`). Oben erscheint eine PC-Auswahl mit Statuspunkten und die Ansicht „Alle“ mit einer Karte je PC (Auslastung, Temperaturen, laufender Job, „Aufwecken“). Aktionen, Dateitransfer und Aufwecken gelten für den gewählten PC; die Auswahl wird gemerkt.
 - Die bisherigen Optionen `agent_host`, `agent_port`, `agent_token` und `pc_mac` funktionieren unverändert (ein PC). Ist `pcs` gesetzt, haben diese keine Wirkung mehr.

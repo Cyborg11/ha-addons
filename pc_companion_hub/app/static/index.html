@@ -177,11 +177,20 @@
         <label class="muted">Adresse des Hubs für das Handy
           <input id="pair_base" type="url" inputmode="url" placeholder="http://192.168.1.10:8099">
         </label>
+        <label class="muted">Rechte des neuen Geräts
+          <select id="pair_role"><option value="full">Vollzugriff</option><option value="view">Nur ansehen (z. B. Wanddisplay)</option></select>
+        </label>
         <code id="pair_url"></code>
         <div id="pair_hint"></div>
         <button id="pair_close" type="button">Schließen</button>
       </div>
       <div id="dev_msg"></div>
+    </div>
+
+    <div class="panel pad" id="auditpanel">
+      <h3>Protokoll <small class="muted">letzte Aktionen</small></h3>
+      <div id="audit_list" class="muted">…</div>
+      <button id="audit_reload" class="primary">Aktualisieren</button>
     </div>
 
     <div class="panel pad">

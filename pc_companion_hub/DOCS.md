@@ -13,6 +13,12 @@ Zeigt die Live-Werte deines Gaming-PCs (vom [PC-Companion-Agenten](https://githu
 | `ui_token` | Langes Token als Notzugang (Anmeldefeld „Stattdessen Token eingeben“, ältere Geräte). Mindestens eines von `pin` und `ui_token` muss gesetzt sein, sonst lehnt der Hub alles ab. |
 | `public_url` | Optional: Adresse, unter der das Handy den Hub erreicht, z. B. `https://pi.<tailnet>.ts.net`. Wird für die QR-Kopplung vorgeschlagen, wenn du die Oberfläche über Home Assistant öffnest. |
 
+## Rechte und Protokoll
+
+Jedes gekoppelte Gerät hat eine Rolle: **Vollzugriff** oder **Nur ansehen**. Letzteres eignet sich für ein Wanddisplay oder für Familie: Es zeigt Dashboard und KI-Tools, aber keine Steuerung, keinen Dateitransfer und kein Aufwecken. Die Rolle legst du beim QR-Koppeln fest („Rechte des neuen Geräts“) oder änderst sie in der Geräteliste. Die Anmeldung per PIN und `ui_token` sowie der HA-Zugang haben immer Vollzugriff.
+
+Das **Protokoll** („Steuerung“ → „Protokoll“) listet die letzten Aktionen: wer, wann, welcher PC, Ergebnis. Es ist nur mit Vollzugriff sichtbar.
+
 ## Mehrere PCs
 
 Jeder PC bekommt einen eigenen Agenten (eigener Token) und einen Eintrag in `pcs`:

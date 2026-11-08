@@ -17,6 +17,7 @@ from pathlib import Path
 log = logging.getLogger("pc-companion-hub")
 
 MAX_DEVICES = 20
+ROLES = ("full", "view")   # view = nur ansehen (Wanddisplay, Familie)
 PAIR_TTL_S = 300          # QR-Code ist 5 Minuten gültig, einmal einlösbar
 MAX_PAIR_CODES = 10
 LOCK_AFTER = 5            # Fehlversuche je Client-IP ...
@@ -83,10 +84,11 @@ class DeviceStore:
         except OSError as e:
             log.warning("devices.json nicht schreibbar (%s) – Kopplungen gehen beim Neustart verloren", e)
 
-    def create(self, name: str) -> tuple[dict, str]:
+    def create(self, name: str, role: str = "full") -> tuple[dict, str]:
         token = secrets.token_urlsafe(32)
         t = now()
-        dev = {"id": secrets.token_hex(4), "name": clean_name(name), "hash": hash_token(token), "created": t, "last_seen": t}
+        dev = {"id": secrets.token_hex(4), "name": clean_name(name), "role": role if role in ROLES else "full",
+               "hash": hash_token(token), "created": t, "last_seen": t}
         self.devices.append(dev)
         if len(self.devices) > MAX_DEVICES:      # das am längsten ungenutzte Gerät fliegt raus
             self.devices.sort(key=lambda d: d.get("last_seen", 0))
@@ -107,6 +109,19 @@ class DeviceStore:
             self._save()
         return found
 
+    def set_role(self, device_id: str, role: str) -> bool:
+        if role not in ROLES:
+            return False
+        for dev in self.devices:
+            if dev["id"] == device_id:
+                dev["role"] = role
+                self._save()
+                return True
+        return False
+
+    def get(self, device_id: str) -> dict | None:
+        return next((d for d in self.devices if d["id"] == device_id), None)
+
     def revoke(self, device_id: str) -> bool:
         before = len(self.devices)
         self.devices = [d for d in self.devices if d["id"] != device_id]
@@ -117,7 +132,8 @@ class DeviceStore:
 
     @staticmethod
     def public_one(dev: dict) -> dict:
-        return {"id": dev["id"], "name": dev.get("name", "Gerät"), "created": dev.get("created"), "last_seen": dev.get("last_seen")}
+        return {"id": dev["id"], "name": dev.get("name", "Gerät"), "role": dev.get("role", "full"),
+                "created": dev.get("created"), "last_seen": dev.get("last_seen")}
 
     def public(self) -> list[dict]:
         return [self.public_one(d) for d in sorted(self.devices, key=lambda d: -d.get("last_seen", 0))]
@@ -127,23 +143,25 @@ class Pairing:
     """Einmalige, kurzlebige Kopplungscodes (nur im Speicher)."""
 
     def __init__(self):
-        self.codes: dict[str, float] = {}
+        self.codes: dict[str, tuple[float, str]] = {}    # code -> (gültig bis, Rolle)
 
     def _prune(self) -> None:
         t = now()
-        self.codes = {c: e for c, e in self.codes.items() if e > t}
+        self.codes = {c: v for c, v in self.codes.items() if v[0] > t}
 
-    def create(self) -> str:
+    def create(self, role: str = "full") -> str:
         self._prune()
         while len(self.codes) >= MAX_PAIR_CODES:
-            self.codes.pop(min(self.codes, key=self.codes.get))
+            self.codes.pop(min(self.codes, key=lambda c: self.codes[c][0]))
         code = secrets.token_urlsafe(18)
-        self.codes[code] = now() + PAIR_TTL_S
+        self.codes[code] = (now() + PAIR_TTL_S, role if role in ROLES else "full")
         return code
 
-    def redeem(self, code: str | None) -> bool:
+    def redeem(self, code: str | None) -> str | None:
+        """Gibt die Rolle des Codes zurück (und entwertet ihn) oder None."""
         self._prune()
-        return bool(code) and self.codes.pop(code, None) is not None
+        entry = self.codes.pop(code, None) if code else None
+        return entry[1] if entry else None
 
 
 class Limiter:
