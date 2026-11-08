@@ -254,8 +254,49 @@ function onMessage(m) {
   }
 }
 
+let trusted = false, authInfo = null, tokenMode = false;
+const authHeaders = () => (token ? { Authorization: "Bearer " + token } : {});
+
+async function fetchAuthInfo() {
+  if (authInfo) return authInfo;
+  try { authInfo = await (await fetch("api/auth/info")).json(); } catch (e) { authInfo = null; }
+  return authInfo;
+}
+
+// Start: Kopplungslink (#pair=…) einlösen, sonst gespeichertes Gerätetoken nutzen, sonst Ingress/Anmeldung.
+async function start() {
+  const m = /^#pair=(.+)$/.exec(location.hash);
+  if (m) {
+    history.replaceState(null, "", location.pathname + location.search);
+    await finishLogin("api/pair/redeem", { code: decodeURIComponent(m[1]) });
+    return;
+  }
+  if (token) { connect(); return; }
+  const info = await fetchAuthInfo();
+  if (!info) { // Hub nicht erreichbar
+    $("badge").textContent = "Hub getrennt"; $("badge").className = "badge offline";
+    setTimeout(start, retry); retry = Math.min(retry * 2, 10000);
+    return;
+  }
+  if (info.trusted) { trusted = true; connect(); return; }
+  askToken("");
+}
+
+async function finishLogin(url, body) {
+  $("loginmsg").textContent = "…";
+  try {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { $("token").value = ""; askToken(d.detail || ("Fehler " + r.status)); return; }
+    token = d.token; trusted = false;
+    store.set("pcc_ui_token", token); store.set("pcc_device_id", (d.device && d.device.id) || "");
+    $("token").value = ""; $("loginmsg").textContent = "";
+    connect();
+  } catch (e) { askToken("Hub nicht erreichbar"); }
+}
+
 function connect() {
-  if (!token) { askToken(""); return; }
+  if (!token && !trusted) { if ($("login").hidden) askToken(""); return; }
   const proto = location.protocol === "https:" ? "wss://" : "ws://";
   const base = location.pathname.replace(/[^/]*$/, "");
   ws = new WebSocket(proto + location.host + base + "ws?token=" + encodeURIComponent(token));
@@ -263,12 +304,17 @@ function connect() {
   ws.onopen = () => { opened = true; retry = 1000; };
   ws.onmessage = e => onMessage(JSON.parse(e.data));
   ws.onclose = async () => {
-    // Der Hub lehnt falsche Tokens schon beim Handshake ab (HTTP 403) – der Browser meldet dann
-    // nur Code 1006. Deshalb per REST prüfen, ob das Token abgelehnt wurde.
+    // Der Hub lehnt unbekannte Tokens schon beim Handshake ab (HTTP 403) – der Browser meldet dann
+    // nur Code 1006. Deshalb per REST prüfen, ob die Anmeldung abgelehnt wurde.
     if (!opened) {
       try {
-        const r = await fetch("api/status", { headers: { Authorization: "Bearer " + token } });
-        if (r.status === 401) { askToken("Token falsch oder im Add-on (ui_token) nicht gesetzt."); return; }
+        const r = await fetch("api/status", { headers: authHeaders() });
+        if (r.status === 401) {
+          const had = !!token;
+          trusted = false;
+          askToken(had ? "Anmeldung abgelaufen oder Gerät entfernt – bitte neu anmelden." : "");
+          return;
+        }
       } catch (e) { /* Hub nicht erreichbar */ }
     }
     $("badge").textContent = "Hub getrennt"; $("badge").className = "badge offline";
@@ -276,15 +322,31 @@ function connect() {
   };
 }
 
-function askToken(msg) {
-  token = ""; store.set("pcc_ui_token", "");
+async function askToken(msg) {
+  token = ""; store.set("pcc_ui_token", ""); store.set("pcc_device_id", "");
+  if (ws) { ws.onclose = null; try { ws.close(); } catch (e) { /* schon zu */ } ws = null; }
+  const info = await fetchAuthInfo();
+  tokenMode = !(info && info.pin);
+  renderLoginMode(info);
   $("loginmsg").textContent = msg || "";
-  $("badge").textContent = "Token nötig"; $("badge").className = "badge offline";
+  $("badge").textContent = "Anmeldung nötig"; $("badge").className = "badge offline";
   show("login");
 }
-$("badge").onclick = () => { if (ws) { ws.onclose = null; ws.close(); } askToken("Neues Token eingeben."); };
 
-$("save").onclick = () => { token = $("token").value.trim(); store.set("pcc_ui_token", token); connect(); };
+function renderLoginMode(info) {
+  const pin = !tokenMode;
+  $("loginhint").textContent = pin ? "PIN eingeben" : "Token eingeben";
+  $("token").placeholder = pin ? "PIN" : "Token";
+  $("token").inputMode = pin && info && info.pin_numeric ? "numeric" : "text";
+  $("switchmode").hidden = !(info && info.pin);
+  $("switchmode").textContent = pin ? "Stattdessen Token eingeben" : "Stattdessen PIN eingeben";
+}
+$("switchmode").onclick = () => { tokenMode = !tokenMode; renderLoginMode(authInfo); $("token").focus(); };
+$("loginform").onsubmit = e => {
+  e.preventDefault();
+  const secret = $("token").value.trim();
+  if (secret) finishLogin("api/login", { secret });
+};
 $("wake").onclick = async () => {
   $("wakemsg").textContent = "Sende Magic Packet …";
   try {
@@ -317,4 +379,4 @@ window.addEventListener("resize", () => { if (tab === "dash" && !$("live").hidde
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 show("login"); $("login").hidden = true; // bis zur ersten Statusmeldung nichts anzeigen
-connect();
+start();

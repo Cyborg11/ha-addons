@@ -11,15 +11,24 @@ Zeigt die Live-Werte deines Gaming-PCs (vom [PC-Companion-Agenten](https://githu
 | `agent_token` | Token aus der `config.yaml` des Agenten |
 | `pc_mac` | MAC-Adresse des PCs für Wake-on-LAN (`ipconfig /all`) |
 | `broadcast_ip` | Broadcast-Adresse des Heimnetzes, z. B. `192.168.178.255` (Standard `255.255.255.255`) |
-| `ui_token` | Frei gewähltes, langes Token für die Weboberfläche. **Pflicht** – ohne Token lehnt der Hub alles ab. |
-| `public_url` | Optional: Tailscale-Adresse, z. B. `https://pi.<tailnet>.ts.net` (nur informativ) |
+| `pin` | Kurze PIN für die Anmeldung am Handy, z. B. 6–8 Ziffern. Empfohlen. Nach 5 Fehlversuchen wird die Anmeldung gesperrt. |
+| `ui_token` | Langes Token als Notzugang (Anmeldefeld „Stattdessen Token eingeben“, ältere Geräte). Mindestens eines von `pin` und `ui_token` muss gesetzt sein, sonst lehnt der Hub alles ab. |
+| `public_url` | Optional: Adresse, unter der das Handy den Hub erreicht, z. B. `https://pi.<tailnet>.ts.net`. Wird für die QR-Kopplung vorgeschlagen, wenn du die Oberfläche über Home Assistant öffnest. |
 
 ## Benutzung
 
-Die Oberfläche liegt auf Port **8099**: `http://<pi-ip>:8099/`. Beim ersten Öffnen das `ui_token` eingeben. Das Add-on läuft mit `host_network`, damit das Wake-on-LAN-Paket ins LAN gelangt; der Port lässt sich daher nicht umlegen.
+Die Oberfläche liegt auf Port **8099**: `http://<pi-ip>:8099/`. Beim ersten Öffnen die `pin` eingeben (oder das `ui_token`). Das Add-on läuft mit `host_network`, damit das Wake-on-LAN-Paket ins LAN gelangt; der Port lässt sich daher nicht umlegen.
 
 Zustände: **online** (Live-Daten), **offline** (Knopf „PC aufwecken“), **startet** (Countdown bis 120 s).
 Das Sonnen-Symbol hält den Bildschirm an (Wake Lock) – für ein altes Handy als Dauer-Display im Querformat.
+
+## Anmeldung am Handy
+
+1. **PIN:** Einmal die `pin` eingeben. Das Gerät bleibt danach angemeldet (eigenes Gerätetoken, die PIN wird nicht gespeichert).
+2. **QR-Code:** Auf einem schon angemeldeten Gerät (oder in der HA-Oberfläche) Tab „Steuerung“ → „Geräte & Anmeldung“ → „Gerät per QR koppeln“. Mit der Kamera des Handys scannen und den Link öffnen: Das Handy ist ohne Eingabe angemeldet. Der Code gilt 5 Minuten und nur einmal. Im Feld „Adresse des Hubs für das Handy“ muss die Adresse stehen, unter der das Handy den Hub erreicht (`http://<pi-ip>:8099` im Heimnetz oder die Tailscale-Adresse); bei Zugriff über HA setzt `public_url` den Vorschlag.
+3. **Home Assistant (Ingress):** In der HA-Seitenleiste „PC-Companion“ oder im Add-on „Benutzeroberfläche öffnen“. Dort meldet HA dich an, PIN und Token entfallen. Fragt die Oberfläche trotzdem nach der PIN, steht im Add-on-Log eine Warnung mit der Quelladresse. Das Teilen-Menü (Android) und die PWA-Installation brauchen weiterhin den direkten Zugang.
+
+Gekoppelte Geräte siehst und entfernst du unter „Geräte & Anmeldung“. Wer die PIN ändert, meldet damit keine Geräte ab; ein einzelnes Gerät entfernst du in der Liste.
 
 ## HTTPS / PWA-Installation
 

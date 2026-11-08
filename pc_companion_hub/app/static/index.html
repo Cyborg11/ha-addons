@@ -16,7 +16,7 @@
     <div><div id="host">PC-Companion</div><div id="sub">–</div></div>
   </div>
   <div class="tools">
-    <span id="badge" class="badge" title="Tippen: Token ändern">…</span>
+    <span id="badge" class="badge">…</span>
     <button id="full" class="icon" title="Vollbild" aria-label="Vollbild"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     <button id="lock" class="icon" title="Display anlassen" aria-label="Display anlassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></button>
   </div>
@@ -24,13 +24,14 @@
 <div id="warn" hidden>Agent/Hub-Version passt nicht – bitte beide aktualisieren.</div>
 
 <section id="login" class="center" hidden>
-  <div class="panel narrow">
+  <form class="panel narrow" id="loginform">
     <h2>Anmelden</h2>
-    <p>Hub-Token eingeben</p>
-    <input id="token" type="password" autocomplete="off" placeholder="ui_token">
-    <button id="save" class="primary">Speichern</button>
+    <p id="loginhint">PIN eingeben</p>
+    <input id="token" type="password" autocomplete="off" inputmode="numeric" enterkeyhint="go" placeholder="PIN">
+    <button id="save" class="primary" type="submit">Anmelden</button>
+    <button id="switchmode" class="linkbtn" type="button" hidden>Stattdessen Token eingeben</button>
     <div id="loginmsg"></div>
-  </div>
+  </form>
 </section>
 
 <section id="offline" class="center" hidden>
@@ -158,6 +159,26 @@
       </div>
     </div>
 
+    <div class="panel pad" id="devices">
+      <h3>Geräte &amp; Anmeldung</h3>
+      <div id="dev_list" class="muted">…</div>
+      <div class="row devbtns">
+        <button id="pair_btn" class="primary">Gerät per QR koppeln</button>
+        <button id="logout_btn">Abmelden</button>
+      </div>
+      <div id="pair_box" hidden>
+        <img id="pair_qr" alt="QR-Code zur Kopplung" width="220" height="220">
+        <div class="muted">Mit der Handy-Kamera scannen. Gültig noch <b id="pair_left">5:00</b>, einmal verwendbar.</div>
+        <label class="muted">Adresse des Hubs für das Handy
+          <input id="pair_base" type="url" inputmode="url" placeholder="http://192.168.1.10:8099">
+        </label>
+        <code id="pair_url"></code>
+        <div id="pair_hint"></div>
+        <button id="pair_close" type="button">Schließen</button>
+      </div>
+      <div id="dev_msg"></div>
+    </div>
+
     <div class="panel pad">
       <h3>Link am PC öffnen</h3>
       <div class="row">
@@ -193,5 +214,6 @@
 <script src="app.js"></script>
 <script src="actions.js"></script>
 <script src="upload.js"></script>
+<script src="devices.js"></script>
 </body>
 </html>
