@@ -36,6 +36,7 @@ class Hub:
         self.wake_started: float | None = None
         self.clients: set = set()
         self.on_snapshot = None               # Rückruf(pc_id, snapshot), z. B. für den Langzeitverlauf
+        self.on_status = None                 # Rückruf(hub) nach jeder Statusprüfung
         self._upstream: asyncio.Task | None = None
 
     # --- Zustand -----------------------------------------------------------
@@ -110,6 +111,11 @@ class Hub:
         if online:
             self.wake_started = None
         self.status = compute_status(online, self.wake_started, time.time())
+        if self.on_status:
+            try:
+                self.on_status(self)
+            except Exception:
+                pass
         if online:
             if self._upstream is None or self._upstream.done():
                 self._upstream = asyncio.create_task(self._relay())

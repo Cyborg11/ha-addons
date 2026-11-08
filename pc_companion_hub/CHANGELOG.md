@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.11.0
+- **Benachrichtigungen aufs Handy** über die Home-Assistant-App: KI-Job fertig oder fehlgeschlagen, PC online/offline (nach 20 s stabil; nach Herunterfahren über den Hub keine Offline-Meldung), GPU länger als 1 Minute über der Grenztemperatur. Einrichtung: Option `notify_service` (z. B. `notify.mobile_app_pixel_8`), dazu `notify_jobs`, `notify_pc_state`, `notify_temp_c` (0 = aus). Im Tab „Steuerung“ gibt es „Testbenachrichtigung senden“. Das Add-on bekommt dafür Zugriff auf die Home-Assistant-API (`homeassistant_api`).
+
 ## 0.10.0
 - **Langzeitverlauf:** Neue Karte „Verlauf“ im Dashboard mit GPU-Last, GPU-Temperatur, GPU-Leistung, VRAM, CPU und RAM über 1 Std., 6 Std., 24 Std. oder 7 Tage, mit Mittel-, Höchst- und Tiefstwert. Der Hub speichert dafür alle 30 s je PC einen Messwert (Temperatur und Leistung als Spitzenwert) in `/data/history.db`, 14 Tage lang. Der Verlauf beginnt mit dem Update; Zeiten, in denen der PC aus war, erscheinen als Lücke.
 

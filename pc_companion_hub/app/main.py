@@ -14,7 +14,7 @@ from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Reques
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import audit as audit_mod, auth, history as history_mod
+from . import audit as audit_mod, auth, history as history_mod, notify as notify_mod
 from .hub import Hub
 from .wol import send_magic_packet
 
@@ -87,6 +87,10 @@ def clean_base(base) -> str | None:
     return base if re.fullmatch(r"https?://[^\s<>\"']{1,200}", base) else None
 
 
+async def _no_send(title, message, tag=None):
+    return False, "nicht eingerichtet"
+
+
 def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> FastAPI:
     opts = load_options() if opts is None else opts
     clients: set = set()
@@ -102,8 +106,20 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     ws_devices: dict[WebSocket, str] = {}
     audit = audit_mod.AuditLog(data_dir / "audit.log")
     history = history_mod.History(data_dir / "history.db")
+    ha = notify_mod.HaNotifier(opts.get("notify_service", ""), os.environ.get("SUPERVISOR_TOKEN"),
+                               os.environ.get("HA_API_URL", "http://supervisor/core/api"))
+    notifier = notify_mod.Notifier(opts, ha.send if ha.configured else _no_send)
+
+    def pc_label(h: Hub) -> str:
+        return h.name or h.agent_host or h.pc_id
+
+    def on_snapshot(pc_id: str, snap: dict) -> None:
+        history.feed(pc_id, snap)
+        notifier.on_snapshot(pc_id, pc_label(hubs[pc_id]), snap)
+
     for h in hubs.values():
-        h.on_snapshot = history.feed
+        h.on_snapshot = on_snapshot
+        h.on_status = lambda hub_, n=notifier: n.on_status(hub_.pc_id, pc_label(hub_), hub_.status)
     if not opts.get("ui_token") and not opts.get("pin"):
         log.warning("Weder pin noch ui_token sind gesetzt – alle API-Aufrufe werden abgelehnt.")
     elif opts.get("pin") and len(str(opts["pin"])) < 6:
@@ -282,6 +298,19 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     def status(hub: Hub = Depends(get_hub)):
         return hub.message()
 
+    @app.get("/api/notify", dependencies=[Depends(require_ui_token)])
+    def notify_info():
+        return {"configured": ha.configured, "service": ha.service if ha.configured else "", "jobs": notifier.jobs,
+                "pc_state": notifier.pc_state, "temp_c": notifier.temp_limit, "last_error": ha.last_error}
+
+    @app.post("/api/notify/test", dependencies=[Depends(require_write)])
+    async def notify_test(request: Request):
+        ok, text = await ha.send("PC-Companion", "Testbenachrichtigung – so melden sich deine PCs.", "pcc-test")
+        record(request, "Testbenachrichtigung", detail=text, ok=ok)
+        if not ok:
+            raise HTTPException(status_code=502, detail=text)
+        return {"ok": True}
+
     @app.get("/api/history", dependencies=[Depends(require_ui_token)])
     def history_query(hours: float = 1, hub: Hub = Depends(get_hub)):
         return history.query(hub.pc_id, hours)
@@ -311,6 +340,8 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         if hub.status != "online":
             raise HTTPException(status_code=409, detail="PC ist nicht online")
         code, data = await hub.agent_action(name, body)
+        if code == 200 and name in ("shutdown", "sleep", "restart"):
+            notifier.expect_power_action(hub.pc_id)         # dann keine „PC ist offline“-Meldung
         detail = ", ".join(f"{k}={str(v)[:60]}" for k, v in (body or {}).items()) if isinstance(body, dict) else None
         record(request, "Aktion: " + name, pc=hub.name or hub.pc_id, detail=detail, ok=code == 200)
         return JSONResponse(data, status_code=code)

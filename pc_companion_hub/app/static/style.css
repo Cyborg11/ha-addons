@@ -212,3 +212,4 @@ body.readonly .view[data-view="ctrl"],body.readonly .view[data-view="files"]{dis
 .segbtn{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:12px;font-weight:600;min-height:34px}
 .segbtn.on{background:rgba(52,232,164,.12);border-color:rgba(52,232,164,.4);color:var(--ok)}
 #h_sum{font-size:12px}
+#nt_msg{color:var(--dim);font-size:13px;margin-top:10px}#nt_test{margin-top:12px}
