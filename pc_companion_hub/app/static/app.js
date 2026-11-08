@@ -20,7 +20,7 @@ function show(view) {
 }
 
 function showTab(name) {
-  tab = ["dash", "tools", "ctrl", "files"].includes(name) ? name : "dash";
+  tab = (role === "view" ? ["dash", "tools"] : ["dash", "tools", "ctrl", "files"]).includes(name) ? name : "dash";
   store.set("pcc_tab", tab);
   document.querySelectorAll(".view").forEach(v => { v.hidden = v.dataset.view !== tab; });
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
@@ -231,7 +231,7 @@ function renderTools(list) {
 
 /* ---------------- Mehrere PCs ---------------- */
 const ALL = "__all";
-let pcList = [], states = {}, current = store.get("pcc_pc") || "";
+let pcList = [], states = {}, current = store.get("pcc_pc") || "", role = "full";
 
 // hängt ?pc=<id> an Hub-Aufrufe (ohne Angabe nimmt der Hub den ersten PC)
 function pcq(url, id) {
@@ -245,8 +245,16 @@ const pcName = id => {
 };
 const STATUS_TEXT = { online: "online", offline: "offline", waking: "startet" };
 
+// Nur-Ansicht-Geräte: Steuerung, Dateien und Aufwecken verschwinden (der Hub lehnt sie ohnehin ab)
+function applyRole(r) {
+  role = r || "full";
+  document.body.classList.toggle("readonly", role === "view");
+  if (role === "view" && (tab === "ctrl" || tab === "files")) showTab("dash");
+}
+
 function setPcs(m) {
   pcList = m.pcs || [];
+  applyRole(m.role);
   if (pcList.length < 2 && current === ALL) current = "";
   if (current !== ALL && !pcList.some(p => p.id === current)) current = m.default || (pcList[0] && pcList[0].id) || "";
   renderBar();

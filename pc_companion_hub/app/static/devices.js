@@ -48,12 +48,24 @@
       }
       const sub = document.createElement("small");
       sub.className = "muted";
-      sub.textContent = "zuletzt " + ago(d.last_seen);
+      const rl = document.createElement("span");
+      rl.className = "devrole r-" + (d.role || "full");
+      rl.textContent = d.role === "view" ? "nur ansehen" : "Vollzugriff";
+      sub.append(rl, " · zuletzt " + ago(d.last_seen));
       info.append(document.createElement("br"), sub);
+      const btns = document.createElement("div");
+      btns.className = "devbtns2";
+      if (role === "full") {
+        const rb = document.createElement("button");
+        rb.textContent = d.role === "view" ? "Vollzugriff geben" : "Nur ansehen";
+        rb.onclick = () => setRole(d, d.role === "view" ? "full" : "view");
+        btns.append(rb);
+      }
       const del = document.createElement("button");
       del.textContent = "Entfernen";
       del.onclick = () => remove(d);
-      row.append(info, del);
+      btns.append(del);
+      row.append(info, btns);
       box.append(row);
     }
   }
@@ -65,6 +77,13 @@
       render(d.devices);
       $("logout_btn").hidden = kind === "ingress";
       msg("");
+    } catch (e) { msg(e.message); }
+  }
+
+  async function setRole(d, newRole) {
+    try {
+      await api("api/devices/" + encodeURIComponent(d.id), "PATCH", { role: newRole });
+      load();
     } catch (e) { msg(e.message); }
   }
 
@@ -103,7 +122,7 @@
     const base = $("pair_base").value.trim();
     if (!base) { $("pair_hint").textContent = "Adresse eintragen, unter der das Handy den Hub erreicht, z. B. http://192.168.1.10:8099"; $("pair_qr").hidden = true; return; }
     try {
-      const d = await api("api/pair", "POST", { base });
+      const d = await api("api/pair", "POST", { base, role: $("pair_role").value });
       store.set("pcc_pair_base", base);
       $("pair_hint").textContent = "";
       $("pair_qr").hidden = !d.qr;
@@ -133,10 +152,35 @@
     startPair();
   };
   $("pair_base").oninput = () => { clearTimeout(baseTimer); baseTimer = setTimeout(startPair, 700); };
+  $("pair_role").onchange = startPair;
   $("pair_close").onclick = stopPair;
+
+  /* ---- Protokoll ---- */
+  async function loadAudit() {
+    const box = $("audit_list");
+    try {
+      const d = await api("api/audit?limit=30");
+      box.textContent = "";
+      box.className = "";
+      if (!d.entries.length) { box.textContent = "Noch nichts protokolliert."; box.className = "muted"; return; }
+      for (const e of d.entries) {
+        const row = document.createElement("div");
+        row.className = "auditrow" + (e.ok ? "" : " bad");
+        const t = new Date(e.t * 1000);
+        const b = document.createElement("b");
+        b.textContent = e.what;
+        const sm = document.createElement("small");
+        sm.textContent = t.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+          + " · " + e.who + (e.pc ? " · " + e.pc : "") + (e.detail ? " · " + e.detail : "");
+        row.append(b, sm);
+        box.append(row);
+      }
+    } catch (e) { box.textContent = e.message; }
+  }
+  $("audit_reload").onclick = loadAudit;
 
   // Liste laden, sobald der Tab „Steuerung“ sichtbar wird
   const view = document.querySelector('[data-view="ctrl"]');
-  new MutationObserver(() => { if (!view.hidden) load(); }).observe(view, { attributes: true, attributeFilter: ["hidden"] });
-  if (!view.hidden) load();
+  new MutationObserver(() => { if (!view.hidden) { load(); loadAudit(); } }).observe(view, { attributes: true, attributeFilter: ["hidden"] });
+  if (!view.hidden) { load(); loadAudit(); }
 })();
