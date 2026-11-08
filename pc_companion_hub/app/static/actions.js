@@ -7,7 +7,7 @@
   async function act(name, body, label) {
     msg("…");
     try {
-      const r = await fetch("api/action/" + name, {
+      const r = await fetch(pcq("api/action/" + name), {
         method: "POST",
         headers: { Authorization: "Bearer " + getToken(), "Content-Type": "application/json" },
         body: JSON.stringify(body || {}),

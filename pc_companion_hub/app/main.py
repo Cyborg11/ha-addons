@@ -10,7 +10,7 @@ import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -42,6 +42,37 @@ def token_ok(expected: str, given: str | None) -> bool:
     return bool(expected) and given is not None and hmac.compare_digest(expected, given)
 
 
+def slugify(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "pc"
+
+
+def build_pcs(opts: dict) -> list[tuple[str, str | None, dict]]:
+    """(id, Name, Optionen) je PC. Neue Form: Liste ``pcs``; alte Form (agent_host, ...) wird zum einzigen PC."""
+    out, used = [], set()
+    for i, entry in enumerate(opts.get("pcs") or []):
+        host = str(entry.get("host") or "").strip()
+        if not host:
+            continue
+        name = str(entry.get("name") or "").strip() or f"PC {i + 1}"
+        base = slugify(name)
+        pid, n = base, 2
+        while pid in used:
+            pid, n = f"{base}-{n}", n + 1
+        used.add(pid)
+        merged = dict(opts)
+        merged.update(
+            agent_host=host, agent_port=int(entry.get("port") or 8765), agent_token=entry.get("token") or "",
+            pc_mac=entry.get("mac") or "",
+            broadcast_ip=entry.get("broadcast_ip") or opts.get("broadcast_ip") or "255.255.255.255",
+        )
+        if entry.get("tools"):
+            merged["tools"] = entry["tools"]
+        out.append((pid, name, merged))
+    if not out:
+        out.append(("pc1", None, dict(opts)))
+    return out
+
+
 def qr_data_uri(text: str) -> str | None:
     if segno is None:
         return None
@@ -58,7 +89,12 @@ def clean_base(base) -> str | None:
 
 def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> FastAPI:
     opts = load_options() if opts is None else opts
-    hub = Hub(opts)
+    clients: set = set()
+    hubs: dict[str, Hub] = {}
+    for pid, pname, popts in build_pcs(opts):
+        hubs[pid] = Hub(popts, pid, pname)
+        hubs[pid].clients = clients           # alle PCs senden an dieselben Browser
+    hub = next(iter(hubs.values()))           # Standard-PC (erster Eintrag)
     data_dir = Path(data_dir or os.environ.get("HUB_DATA", "/data"))
     devices = auth.DeviceStore(data_dir / "devices.json")
     pairing = auth.Pairing()
@@ -71,13 +107,26 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        task = asyncio.create_task(hub.run())
+        tasks = [asyncio.create_task(h.run()) for h in hubs.values()]
         yield
-        task.cancel()
-        hub.stop()
+        for t in tasks:
+            t.cancel()
+        for h in hubs.values():
+            h.stop()
 
     app = FastAPI(title="PC-Companion Hub", lifespan=lifespan)
     app.state.hub = hub
+    app.state.hubs = hubs
+
+    def get_hub(pc: str | None = Query(default=None)) -> Hub:
+        if pc is None:
+            return hub
+        if pc not in hubs:
+            raise HTTPException(status_code=404, detail="unbekannter PC")
+        return hubs[pc]
+
+    def pc_list() -> list[dict]:
+        return [{"id": pid, "name": h.name} for pid, h in hubs.items()]
 
     def principal(given: str | None, ip: str) -> dict | None:
         """Wer ruft auf? Hauptschlüssel (ui_token), gekoppeltes Gerät oder HA-Ingress."""
@@ -179,15 +228,19 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         return {"ok": True}
 
     @app.get("/api/status", dependencies=[Depends(require_ui_token)])
-    def status():
+    def status(hub: Hub = Depends(get_hub)):
         return hub.message()
 
+    @app.get("/api/pcs", dependencies=[Depends(require_ui_token)])
+    def pcs():
+        return {"pcs": pc_list(), "default": next(iter(hubs))}
+
     @app.post("/api/wake", dependencies=[Depends(require_ui_token)])
-    def wake():
-        if not opts.get("pc_mac"):
-            raise HTTPException(status_code=400, detail="pc_mac ist nicht konfiguriert")
+    def wake(hub: Hub = Depends(get_hub)):
+        if not hub.opts.get("pc_mac"):
+            raise HTTPException(status_code=400, detail="MAC-Adresse ist nicht konfiguriert")
         try:
-            send_magic_packet(opts["pc_mac"], opts.get("broadcast_ip") or "255.255.255.255")
+            send_magic_packet(hub.opts["pc_mac"], hub.opts.get("broadcast_ip") or "255.255.255.255")
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         except OSError as e:
@@ -196,7 +249,7 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         return {"ok": True, "status": hub.status}
 
     @app.post("/api/action/{name}", dependencies=[Depends(require_ui_token)])
-    async def action(name: str, body: dict | None = Body(default=None)):
+    async def action(name: str, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
         if name not in ALLOWED_ACTIONS:
             raise HTTPException(status_code=404, detail="unbekannte Aktion")
         if hub.status != "online":
@@ -205,21 +258,21 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         return JSONResponse(data, status_code=code)
 
     @app.get("/api/upload/targets", dependencies=[Depends(require_ui_token)])
-    async def upload_targets():
+    async def upload_targets(hub: Hub = Depends(get_hub)):
         if hub.status != "online":
             raise HTTPException(status_code=409, detail="PC ist nicht online")
         code, data = await hub.agent_upload_targets()
         return JSONResponse(data, status_code=code)
 
     @app.post("/api/upload", dependencies=[Depends(require_ui_token)])
-    async def upload(request: Request, filename: str, target: str | None = None):
+    async def upload(request: Request, filename: str, target: str | None = None, hub: Hub = Depends(get_hub)):
         if hub.status != "online":
             raise HTTPException(status_code=409, detail="PC ist nicht online")
         code, data = await hub.agent_upload(request.stream(), filename, target, request.headers.get("content-length"))
         return JSONResponse(data, status_code=code)
 
     @app.get("/api/job/{job_id}/preview", dependencies=[Depends(require_ui_token)])
-    async def job_preview(job_id: str):
+    async def job_preview(job_id: str, hub: Hub = Depends(get_hub)):
         if hub.status != "online" or not re.fullmatch(r"[A-Za-z0-9._:-]{1,80}", job_id):
             raise HTTPException(status_code=404, detail="kein Vorschaubild")
         code, data, ctype = await hub.agent_job_preview(job_id)
@@ -234,17 +287,19 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
             await websocket.close(code=4401)
             return
         await websocket.accept()
-        hub.clients.add(websocket)
+        clients.add(websocket)
         if who["kind"] == "device":
             ws_devices[websocket] = who["id"]
         try:
-            await websocket.send_text(json.dumps(hub.message()))
+            await websocket.send_text(json.dumps({"pcs": pc_list(), "default": next(iter(hubs))}))
+            for h in hubs.values():
+                await websocket.send_text(json.dumps(h.message()))
             while True:
                 await websocket.receive_text()  # hält die Verbindung; Eingaben ignoriert
         except (WebSocketDisconnect, RuntimeError):
             pass
         finally:
-            hub.clients.discard(websocket)
+            clients.discard(websocket)
             ws_devices.pop(websocket, None)
 
     app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")

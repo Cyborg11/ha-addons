@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0
+- **Mehrere PCs:** Neue Option `pcs` (Liste mit `name`, `host`, `port`, `token`, `mac`). Oben erscheint eine PC-Auswahl mit Statuspunkten und die Ansicht „Alle“ mit einer Karte je PC (Auslastung, Temperaturen, laufender Job, „Aufwecken“). Aktionen, Dateitransfer und Aufwecken gelten für den gewählten PC; die Auswahl wird gemerkt.
+- Die bisherigen Optionen `agent_host`, `agent_port`, `agent_token` und `pc_mac` funktionieren unverändert (ein PC). Ist `pcs` gesetzt, haben diese keine Wirkung mehr.
+- Die Agenten brauchen keine Änderung. Jeder PC braucht seinen eigenen Agenten mit eigenem Token.
+
 ## 0.7.0
 - **PIN-Anmeldung:** Neue Option `pin` (z. B. 6 Ziffern). Das Handy meldet sich einmal mit der PIN an und bekommt ein langes Gerätetoken, das im Add-on-Datenordner nur als Hash liegt. `ui_token` bleibt gültig (Notzugang, ältere Geräte), ist aber nicht mehr Pflicht, wenn eine PIN gesetzt ist.
 - **Sperre:** Nach 5 Fehlversuchen sperrt der Hub die Anmeldung dieser Adresse 15 Minuten, bei sehr vielen Fehlversuchen insgesamt 1 Stunde für alle.

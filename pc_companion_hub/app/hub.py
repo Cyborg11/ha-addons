@@ -22,8 +22,10 @@ def compute_status(online: bool, wake_started: float | None, now: float) -> str:
 
 
 class Hub:
-    def __init__(self, opts: dict):
+    def __init__(self, opts: dict, pc_id: str = "pc1", name: str | None = None):
         self.opts = opts
+        self.pc_id = pc_id
+        self.name = name
         host, port = opts.get("agent_host", ""), int(opts.get("agent_port", 8765))
         self.http_base = f"http://{host}:{port}"
         self.ws_url = f"ws://{host}:{port}/ws"
@@ -41,6 +43,8 @@ class Hub:
         if self.status == "waking" and self.wake_started is not None:
             left = max(0, round(WAKE_TIMEOUT_S - (time.time() - self.wake_started)))
         return {
+            "pc": self.pc_id,
+            "name": self.name,
             "status": self.status,
             "api_ok": self.api_version in (None, EXPECTED_API_VERSION),
             "api_version": self.api_version,

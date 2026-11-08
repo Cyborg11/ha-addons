@@ -9,7 +9,7 @@
   async function loadTargets() {
     if (targetsLoaded) return;
     try {
-      const r = await fetch("api/upload/targets", { headers: { Authorization: "Bearer " + token() } });
+      const r = await fetch(pcq("api/upload/targets"), { headers: { Authorization: "Bearer " + token() } });
       if (!r.ok) return;
       const d = await r.json();
       $("up_target").innerHTML = "";
@@ -40,7 +40,7 @@
   function send(blob, name, target) {
     return new Promise(resolve => {
       const r = row(name), x = new XMLHttpRequest();
-      let url = "api/upload?filename=" + encodeURIComponent(name);
+      let url = pcq("api/upload?filename=" + encodeURIComponent(name));
       if (target) url += "&target=" + encodeURIComponent(target);
       x.open("POST", url);
       x.setRequestHeader("Authorization", "Bearer " + token());
@@ -95,6 +95,7 @@
     try { return "caches" in window ? (await (await caches.open(SHARE_CACHE)).keys()).length : 0; } catch (e) { return 0; }
   }
 
+  window.addEventListener("pcc:pc", () => { targetsLoaded = false; });   // jeder PC hat eigene Zielordner
   window.addEventListener("pcc:status", async ev => {
     status = ev.detail;
     if (status === "online") { await loadTargets(); flushShared(); }

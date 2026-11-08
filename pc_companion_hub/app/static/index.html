@@ -21,6 +21,7 @@
     <button id="lock" class="icon" title="Display anlassen" aria-label="Display anlassen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></button>
   </div>
 </header>
+<nav id="pcbar" hidden aria-label="PC wählen"></nav>
 <div id="warn" hidden>Agent/Hub-Version passt nicht – bitte beide aktualisieren.</div>
 
 <section id="login" class="center" hidden>
@@ -32,6 +33,10 @@
     <button id="switchmode" class="linkbtn" type="button" hidden>Stattdessen Token eingeben</button>
     <div id="loginmsg"></div>
   </form>
+</section>
+
+<section id="overview" hidden>
+  <div id="ovgrid"></div>
 </section>
 
 <section id="offline" class="center" hidden>

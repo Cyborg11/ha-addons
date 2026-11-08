@@ -141,7 +141,7 @@ def test_device_list_revoke_and_websocket(client):
 
     own = lst["current"]
     with client.websocket_connect("/ws?token=" + token) as ws:
-        assert ws.receive_json()["status"] == "offline"
+        assert ws.receive_json()["pcs"] and ws.receive_json()["status"] == "offline"
         assert client.delete("/api/devices/" + own, headers=MASTER).status_code == 200
     assert client.get("/api/status", headers=bearer(token)).status_code == 401
     with pytest.raises(Exception):
@@ -181,7 +181,7 @@ def test_ingress_ip_is_trusted_without_token(tmp_path, clock, monkeypatch):
         assert c.get("/api/status").status_code == 200
         assert c.get("/api/devices").json()["kind"] == "ingress"
         with c.websocket_connect("/ws") as ws:
-            assert ws.receive_json()["status"] == "offline"
+            assert ws.receive_json()["pcs"] and ws.receive_json()["status"] == "offline"
 
 
 def test_direct_access_is_not_trusted(client):
