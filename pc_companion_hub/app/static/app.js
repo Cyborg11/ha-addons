@@ -13,8 +13,9 @@ const CIRC = 276.46;
 
 /* ---------------- Ansichten ---------------- */
 function show(view) {
-  for (const id of ["login", "offline", "waking", "live"]) $(id).hidden = id !== view;
+  for (const id of ["login", "overview", "offline", "waking", "live"]) $(id).hidden = id !== view;
   $("tabs").hidden = view !== "live";
+  $("pcbar").hidden = pcList.length < 2 || view === "login";
   document.body.classList.toggle("is-live", view === "live");
 }
 
@@ -175,7 +176,7 @@ async function loadPreview(job) {
   if (previewBusy || key === previewKey) return;
   previewBusy = true;
   try {
-    const r = await fetch("api/job/" + encodeURIComponent(job.job_id) + "/preview", { headers: { Authorization: "Bearer " + token } });
+    const r = await fetch(pcq("api/job/" + encodeURIComponent(job.job_id) + "/preview"), { headers: authHeaders() });
     if (r.ok) {
       const url = URL.createObjectURL(await r.blob());
       $("jpic").src = url;
@@ -228,28 +229,150 @@ function renderTools(list) {
   }
 }
 
+/* ---------------- Mehrere PCs ---------------- */
+const ALL = "__all";
+let pcList = [], states = {}, current = store.get("pcc_pc") || "";
+
+// hängt ?pc=<id> an Hub-Aufrufe (ohne Angabe nimmt der Hub den ersten PC)
+function pcq(url, id) {
+  const pc = id || current;
+  if (!pc || pc === ALL) return url;
+  return url + (url.includes("?") ? "&" : "?") + "pc=" + encodeURIComponent(pc);
+}
+const pcName = id => {
+  const p = pcList.find(x => x.id === id), s = states[id];
+  return (p && p.name) || (s && (s.name || s.host)) || "PC";
+};
+const STATUS_TEXT = { online: "online", offline: "offline", waking: "startet" };
+
+function setPcs(m) {
+  pcList = m.pcs || [];
+  if (pcList.length < 2 && current === ALL) current = "";
+  if (current !== ALL && !pcList.some(p => p.id === current)) current = m.default || (pcList[0] && pcList[0].id) || "";
+  renderBar();
+}
+
+function renderBar() {
+  const bar = $("pcbar");
+  bar.hidden = pcList.length < 2 || !$("login").hidden;
+  if (bar.hidden) return;
+  bar.textContent = "";
+  for (const p of [{ id: ALL, name: "Alle" }, ...pcList]) {
+    const b = document.createElement("button");
+    b.className = "chip" + (p.id === current ? " on" : "");
+    if (p.id !== ALL) {
+      const d = document.createElement("i");
+      d.className = "dot st-" + ((states[p.id] || {}).status || "offline");
+      b.append(d);
+    }
+    b.append(p.name || pcName(p.id));
+    b.onclick = () => selectPc(p.id);
+    bar.append(b);
+  }
+}
+
+function selectPc(id) {
+  if (id === current) return;
+  current = id; store.set("pcc_pc", id);
+  for (const k in hist) hist[k].length = 0;
+  previewKey = ""; toolsKey = "";
+  renderBar();
+  window.dispatchEvent(new CustomEvent("pcc:pc", { detail: id }));
+  if (id === ALL) { showOverview(); return; }
+  if (states[id]) applyState(states[id]);
+}
+
+/* Übersicht: eine Karte je PC, wird an Ort und Stelle aktualisiert (damit Klicks nicht verloren gehen) */
+const ovCards = {};
+function showOverview() {
+  show("overview");
+  $("host").textContent = "Alle PCs"; $("sub").textContent = "";
+  $("badge").textContent = "Übersicht"; $("badge").className = "badge";
+  $("warn").hidden = true;
+  renderOverview();
+}
+
+function ovCard(p) {
+  const root = document.createElement("div");
+  root.className = "panel pad ov";
+  root.innerHTML = '<div class="ovhead"><i class="dot"></i><b class="ovname"></b><span class="ovstate"></span></div>'
+    + '<div class="ovstats"></div><div class="ovjob" hidden></div>'
+    + '<div class="row"><button class="ovopen primary">Öffnen</button><button class="ovwake" hidden>Aufwecken</button></div><div class="ovmsg"></div>';
+  const c = { root, dot: root.querySelector(".dot"), name: root.querySelector(".ovname"), state: root.querySelector(".ovstate"),
+    stats: root.querySelector(".ovstats"), job: root.querySelector(".ovjob"), wake: root.querySelector(".ovwake"), msg: root.querySelector(".ovmsg") };
+  root.querySelector(".ovopen").onclick = () => selectPc(p.id);
+  c.wake.onclick = async () => {
+    c.msg.textContent = "Sende Magic Packet …";
+    try {
+      const r = await fetch(pcq("api/wake", p.id), { method: "POST", headers: authHeaders() });
+      c.msg.textContent = r.ok ? "" : "Fehler: " + ((await r.json().catch(() => ({}))).detail || r.status);
+    } catch (e) { c.msg.textContent = "Hub nicht erreichbar"; }
+  };
+  return c;
+}
+
+function renderOverview() {
+  const grid = $("ovgrid");
+  for (const p of pcList) {
+    if (!ovCards[p.id]) { ovCards[p.id] = ovCard(p); grid.append(ovCards[p.id].root); }
+    const c = ovCards[p.id], m = states[p.id];
+    c.name.textContent = p.name || pcName(p.id);
+    const st = m ? m.status : "offline";
+    c.dot.className = "dot st-" + st;
+    c.state.textContent = m ? (STATUS_TEXT[st] || st) + (st === "waking" && m.waking_left != null ? " (" + m.waking_left + " s)" : "") : "…";
+    c.wake.hidden = !(m && st === "offline" && m.wol_configured);
+    const s = m && m.snapshot;
+    c.stats.textContent = "";
+    if (st === "online" && s) {
+      const g = s.gpu || {}, cpu = s.cpu || {}, r = s.ram || {};
+      const vf = g.vram_total_mb ? Math.round(100 * g.vram_used_mb / g.vram_total_mb) : null;
+      const rf = r.total_mb ? Math.round(100 * r.used_mb / r.total_mb) : null;
+      for (const [label, val, lv] of [["GPU", n(g.util_pct, " %"), level(g.util_pct || 0, 90, 101)], ["Temp", n(g.temp_c, " °C"), level(g.temp_c || 0, 70, 82)],
+        ["VRAM", n(vf, " %"), level(vf || 0, 85, 95)], ["CPU", n(cpu.util_pct != null ? Math.round(cpu.util_pct) : null, " %"), "ok"], ["RAM", n(rf, " %"), level(rf || 0, 85, 95)]]) {
+        const d = document.createElement("div");
+        d.className = "ovstat lv-" + lv;
+        const sm = document.createElement("small"), b = document.createElement("b");
+        sm.textContent = label; b.textContent = val;
+        d.append(sm, b);
+        c.stats.append(d);
+      }
+    }
+    const j = s && s.job;
+    c.job.hidden = !(st === "online" && j);
+    if (!c.job.hidden) c.job.textContent = j.tool + ": " + (j.title || JOB_STATE[j.state] || j.state) + " · " + Math.round(j.progress * 100) + " % · " + (JOB_STATE[j.state] || j.state);
+  }
+}
+
 /* ---------------- Verbindung ---------------- */
 function onMessage(m) {
+  if (m.pcs) { setPcs(m); return; }
+  states[m.pc] = m;
+  renderBar();
+  if (current === ALL) { if ($("overview").hidden) showOverview(); else renderOverview(); return; }
+  if (m.pc === current) applyState(m);
+}
+
+function applyState(m) {
   window.dispatchEvent(new CustomEvent("pcc:status", { detail: m.status }));
   const badge = $("badge");
-  badge.textContent = { online: "online", offline: "offline", waking: "startet" }[m.status] || m.status;
+  badge.textContent = STATUS_TEXT[m.status] || m.status;
   badge.className = "badge " + m.status;
   $("warn").hidden = m.api_ok;
   renderTools(m.tools || []);
   if (m.status === "online") {
     if ($("live").hidden) { show("live"); showTab(tab); }
-    if (m.snapshot) render(m.snapshot);
+    if (m.snapshot) { render(m.snapshot); $("host").textContent = m.name || m.snapshot.host || "PC"; }
   } else if (m.status === "waking") {
     show("waking");
-    $("host").textContent = m.host || "PC-Companion";
+    $("host").textContent = m.name || m.host || "PC-Companion";
     $("sub").textContent = "";
     $("countdown").textContent = "noch bis zu " + (m.waking_left ?? "?") + " s";
   } else {
     show("offline");
-    $("host").textContent = m.host || "PC-Companion";
+    $("host").textContent = m.name || m.host || "PC-Companion";
     $("sub").textContent = "";
     $("wake").disabled = !m.wol_configured;
-    if (!m.wol_configured) $("wakemsg").textContent = "pc_mac im Add-on nicht konfiguriert.";
+    $("wakemsg").textContent = m.wol_configured ? "" : "MAC-Adresse im Add-on nicht konfiguriert.";
     for (const k in hist) hist[k].length = 0;
   }
 }
@@ -350,7 +473,7 @@ $("loginform").onsubmit = e => {
 $("wake").onclick = async () => {
   $("wakemsg").textContent = "Sende Magic Packet …";
   try {
-    const r = await fetch("api/wake", { method: "POST", headers: { Authorization: "Bearer " + token } });
+    const r = await fetch(pcq("api/wake"), { method: "POST", headers: authHeaders() });
     $("wakemsg").textContent = r.ok ? "" : "Fehler: " + (await r.json()).detail;
   } catch (e) { $("wakemsg").textContent = "Hub nicht erreichbar"; }
 };

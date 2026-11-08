@@ -6,14 +6,31 @@ Zeigt die Live-Werte deines Gaming-PCs (vom [PC-Companion-Agenten](https://githu
 
 | Option | Bedeutung |
 |---|---|
-| `agent_host` | IP oder Name des PCs (feste IP im Router empfohlen) |
-| `agent_port` | Port des Agenten (Standard `8765`) |
-| `agent_token` | Token aus der `config.yaml` des Agenten |
-| `pc_mac` | MAC-Adresse des PCs für Wake-on-LAN (`ipconfig /all`) |
+| `pcs` | **Liste der PCs** (empfohlen, auch für nur einen PC). Je Eintrag: `name` (z. B. „Gaming-PC“), `host` (IP oder Name, feste IP im Router empfohlen), `port` (Standard `8765`), `token` (aus der `config.yaml` des Agenten), `mac` (MAC-Adresse für Wake-on-LAN, `ipconfig /all`), optional `broadcast_ip` |
+| `agent_host`, `agent_port`, `agent_token`, `pc_mac` | Alte Einstellung für **einen** PC. Gilt nur, solange `pcs` leer ist. |
 | `broadcast_ip` | Broadcast-Adresse des Heimnetzes, z. B. `192.168.178.255` (Standard `255.255.255.255`) |
 | `pin` | Kurze PIN für die Anmeldung am Handy, z. B. 6–8 Ziffern. Empfohlen. Nach 5 Fehlversuchen wird die Anmeldung gesperrt. |
 | `ui_token` | Langes Token als Notzugang (Anmeldefeld „Stattdessen Token eingeben“, ältere Geräte). Mindestens eines von `pin` und `ui_token` muss gesetzt sein, sonst lehnt der Hub alles ab. |
 | `public_url` | Optional: Adresse, unter der das Handy den Hub erreicht, z. B. `https://pi.<tailnet>.ts.net`. Wird für die QR-Kopplung vorgeschlagen, wenn du die Oberfläche über Home Assistant öffnest. |
+
+## Mehrere PCs
+
+Jeder PC bekommt einen eigenen Agenten (eigener Token) und einen Eintrag in `pcs`:
+
+```yaml
+pcs:
+  - name: Gaming-PC
+    host: 192.168.1.20
+    token: "<Token aus agent/config.yaml>"
+    mac: "AA:BB:CC:DD:EE:01"
+  - name: KI-PC
+    host: 100.64.0.7        # z. B. per Tailscale
+    port: 8765
+    token: "<anderer Token>"
+    mac: "AA:BB:CC:DD:EE:02"
+```
+
+Bei mehreren PCs zeigt die Leiste oben je PC einen Knopf mit Statuspunkt, dazu „Alle“: eine Übersicht mit einer Karte je PC (GPU, Temperatur, VRAM, CPU, RAM, laufender Job; ausgeschaltete PCs lassen sich dort aufwecken). Steuerung, Dateien und KI-Tools gelten für den gewählten PC. Die `tools`-Kacheln sind für alle PCs gleich. Den Kopplungs-QR und die Geräteverwaltung gibt es nur einmal, sie gelten für den ganzen Hub.
 
 ## Benutzung
 

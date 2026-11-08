@@ -62,7 +62,7 @@ def test_ws_auth_and_initial_message(client):
         with client.websocket_connect("/ws?token=bad"):
             pass
     with client.websocket_connect("/ws?token=ui") as ws:
-        assert ws.receive_json()["status"] == "offline"
+        assert ws.receive_json()["pcs"] and ws.receive_json()["status"] == "offline"
 
 
 def test_static_served(client):
