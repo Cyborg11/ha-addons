@@ -20,7 +20,7 @@ from .wol import send_magic_packet
 log = logging.getLogger("pc-companion-hub")
 STATIC = Path(__file__).parent / "static"
 ALLOWED_ACTIONS = {
-    "lock", "sleep", "shutdown", "restart", "cancel_shutdown", "volume", "mute",
+    "lock", "sleep", "shutdown", "restart", "restart_agent", "cancel_shutdown", "volume", "mute",
     "media_play_pause", "media_next", "media_prev", "open_url",
 }
 

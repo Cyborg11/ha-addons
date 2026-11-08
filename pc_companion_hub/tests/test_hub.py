@@ -77,6 +77,20 @@ def test_action_requires_auth_and_online(client):
     assert client.post("/api/action/rm_rf", headers=AUTH).status_code == 404
 
 
+def test_restart_agent_action_is_allowed(client):
+    hub = client.app.state.hub
+    hub.status = "online"
+    seen = []
+
+    async def fake(name, body):
+        seen.append(name)
+        return 200, {"ok": True, "action": name}
+
+    hub.agent_action = fake
+    assert client.post("/api/action/restart_agent", headers=AUTH).status_code == 200
+    assert seen == ["restart_agent"]
+
+
 def test_action_is_forwarded(client):
     hub = client.app.state.hub
     hub.status = "online"
