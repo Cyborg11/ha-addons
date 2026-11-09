@@ -13,6 +13,21 @@ Zeigt die Live-Werte deines Gaming-PCs (vom [PC-Companion-Agenten](https://githu
 | `ui_token` | Langes Token als Notzugang (Anmeldefeld „Stattdessen Token eingeben“, ältere Geräte). Mindestens eines von `pin` und `ui_token` muss gesetzt sein, sonst lehnt der Hub alles ab. |
 | `public_url` | Optional: Adresse, unter der das Handy den Hub erreicht, z. B. `https://pi.<tailnet>.ts.net`. Wird für die QR-Kopplung vorgeschlagen, wenn du die Oberfläche über Home Assistant öffnest. |
 
+## Zusatzfunktionen des Agenten
+
+Mit einem Agenten ab Phase 8 (PCCompanion, `GET /health` meldet `features`) erscheinen im Dashboard zusätzliche Bereiche. Die Einrichtung dazu steht in der `config.yaml` des Agenten (Beispiele in `config.example.yaml`):
+
+| Bereich | Voraussetzung am Agenten |
+|---|---|
+| Energie-Plan, Prozesse, Zwischenablage senden, Bildschirm aus | keine |
+| Programme | `programs:` mit den erlaubten Programmen |
+| Galerie | `gallery.folders:` mit Ausgabeordnern; Vorschaubilder brauchen `Pillow` |
+| Screenshot | `Pillow` |
+| Zwischenablage vom PC holen | `clipboard.allow_read: true` |
+| Job-Abbruch | die Tools (SIG, MediaAI) über `ai-core` mit `aicore.pcc` |
+
+Nur-Ansicht-Geräte sehen davon nur die Galerie, den Job-Verlauf und den Energie-Plan (lesend); alles andere verlangt Vollzugriff.
+
 ## Benachrichtigungen
 
 Der Hub kann dir über die Home-Assistant-Companion-App Nachrichten schicken. Einrichtung:

@@ -20,7 +20,7 @@ function show(view) {
 }
 
 function showTab(name) {
-  tab = (role === "view" ? ["dash", "tools"] : ["dash", "tools", "ctrl", "files"]).includes(name) ? name : "dash";
+  tab = (role === "view" ? ["dash", "tools", "gallery"] : ["dash", "tools", "ctrl", "files", "gallery"]).includes(name) ? name : "dash";
   store.set("pcc_tab", tab);
   document.querySelectorAll(".view").forEach(v => { v.hidden = v.dataset.view !== tab; });
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
@@ -158,6 +158,7 @@ function render(s) {
   push("gpu", g.util_pct); push("temp", g.temp_c); push("cpu", c.util_pct);
   push("ram", rf * 100); push("down", net.down_kbps); push("up", net.up_kbps);
   renderJob(s);
+  window.dispatchEvent(new CustomEvent("pcc:snap", { detail: s }));
   if (tab === "dash") drawAll();
 }
 
@@ -197,7 +198,8 @@ function renderJob(s) {
   $("jtitle").textContent = (j.state === "error" && j.message) ? j.message : (j.title || "");
   $("jpct").textContent = Math.round(j.progress * 100) + " %";
   $("jbar").style.width = Math.round(j.progress * 100) + "%";
-  $("jeta").textContent = j.state === "running" ? fmtEta(j.eta_s) : "";
+  $("jeta").textContent = j.cancel_requested && (j.state === "running" || j.state === "queued") ? "Abbruch angefordert …" : (j.state === "running" ? fmtEta(j.eta_s) : "");
+  $("jcancel").hidden = !(features.includes("job_cancel") && role === "full" && (j.state === "running" || j.state === "queued") && !j.cancel_requested);
   const more = (s.jobs || []).length - 1;
   $("jmore").textContent = more > 0 ? "+" + more + " weitere" : "";
   $("jimg").hidden = !j.has_preview;
@@ -231,7 +233,7 @@ function renderTools(list) {
 
 /* ---------------- Mehrere PCs ---------------- */
 const ALL = "__all";
-let pcList = [], states = {}, current = store.get("pcc_pc") || "", role = "full";
+let pcList = [], states = {}, current = store.get("pcc_pc") || "", role = "full", features = [];
 
 // hängt ?pc=<id> an Hub-Aufrufe (ohne Angabe nimmt der Hub den ersten PC)
 function pcq(url, id) {
@@ -250,6 +252,14 @@ function applyRole(r) {
   role = r || "full";
   document.body.classList.toggle("readonly", role === "view");
   if (role === "view" && (tab === "ctrl" || tab === "files")) showTab("dash");
+}
+
+// Bereiche zeigen, die der Agent meldet (data-feature); ältere Agenten ohne Zusatzfunktionen bleiben unverändert
+function setFeatures(list) {
+  features = Array.isArray(list) ? list : [];
+  document.querySelectorAll("[data-feature]").forEach(el => { el.hidden = !features.includes(el.dataset.feature); });
+  if (tab === "gallery" && !features.includes("gallery")) showTab("dash");
+  window.dispatchEvent(new CustomEvent("pcc:features"));
 }
 
 function setPcs(m) {
@@ -366,6 +376,7 @@ function applyState(m) {
   badge.textContent = STATUS_TEXT[m.status] || m.status;
   badge.className = "badge " + m.status;
   $("warn").hidden = m.api_ok;
+  setFeatures(m.features);
   renderTools(m.tools || []);
   if (m.status === "online") {
     if ($("live").hidden) { show("live"); showTab(tab); }

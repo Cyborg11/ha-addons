@@ -32,6 +32,7 @@ class Hub:
         self.status = "offline"
         self.api_version: int | None = None
         self.agent_host: str | None = None
+        self.features: list[str] = []         # Zusatzfunktionen des Agenten (/health), leer bei älteren Agenten
         self.snapshot: dict | None = None
         self.wake_started: float | None = None
         self.clients: set = set()
@@ -56,6 +57,7 @@ class Hub:
             "wol_configured": bool(self.opts.get("pc_mac")),
             "snapshot": self.snapshot,
             "tools": self.tools(),
+            "features": self.features,
         }
 
     def tools(self) -> list[dict]:
@@ -106,6 +108,7 @@ class Hub:
             online = r.status_code == 200
             self.api_version = data.get("api_version")
             self.agent_host = data.get("host")
+            self.features = [f for f in (data.get("features") or []) if isinstance(f, str)]
         except Exception:
             pass
         if online:
@@ -187,6 +190,16 @@ class Hub:
             return r.status_code, r.content, r.headers.get("content-type", "application/octet-stream")
         except Exception:
             return 502, b"", "text/plain"
+
+    async def agent_request(self, method: str, path: str, params: dict | None = None, body=None,
+                            timeout: float = 15.0) -> tuple[int, bytes, str]:
+        """Reicht einen Aufruf an den Agenten durch (der Agent-Token bleibt im Hub). Gibt (Status, Inhalt, Content-Type) zurück."""
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                r = await client.request(method, f"{self.http_base}{path}", params=params, json=body, headers=self._agent_headers())
+            return r.status_code, r.content, r.headers.get("content-type", "application/octet-stream")
+        except Exception as e:
+            return 502, json.dumps({"detail": f"Agent nicht erreichbar: {e.__class__.__name__}"}).encode(), "application/json"
 
     def stop(self) -> None:
         if self._upstream:
