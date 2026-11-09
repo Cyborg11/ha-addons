@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.0
+- **Top 5 Programme** (Dashboard, aufklappbar): nach GPU, CPU, RAM, Festplatte und Netzwerk. Gleichnamige Prozesse (z. B. Browser) sind zusammengefasst. Braucht den neuen Agenten (`top5` in `features`); auch für Nur-Ansicht-Geräte.
+- **Netzwerk:** Den Datenverkehr je Programm liefert Windows nur mit Administratorrechten, der Agent läuft bewusst ohne. Die Liste zeigt deshalb die Programme mit den meisten aktiven Verbindungen ins Netz und darunter den Gesamtdurchsatz der Netzwerkkarte. GPU, CPU, RAM und Festplatte sind je Programm gemessen.
+
 ## 0.12.0
 Neue Bereiche für die Zusatzfunktionen des Agenten (Phase 8). Sie erscheinen nur, wenn der Agent sie meldet (`features` in `/health`); mit einem älteren Agenten bleibt alles wie bisher.
 - **Energie-Plan** (Steuerung): „In 30 Min. / 1 / 2 / 4 Std.“ oder „Nach dem letzten KI-Job“ herunterfahren bzw. in den Ruhezustand, mit Anzeige und Abbrechen.
