@@ -208,7 +208,11 @@ body.readonly .view[data-view="ctrl"],body.readonly .view[data-view="files"]{dis
 #audit_reload{margin-top:12px}
 
 /* ---------- Verlauf ---------- */
-.c-hist{grid-column:1/-1}
+.c-hist,.c-top{grid-column:1/-1}
+.toprow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.toprow:last-child{border-bottom:0}
+.toprow .bar{grid-column:1/-1;height:6px}
+.toprow span{color:var(--dim);font-size:12px;text-align:right}
 .c-hist canvas{height:170px}
 .seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 .segbtn{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:12px;font-weight:600;min-height:34px}
@@ -219,10 +223,10 @@ body.readonly .view[data-view="ctrl"],body.readonly .view[data-view="files"]{dis
 /* ---------- Agent-Zusatzfunktionen ---------- */
 .small{font-size:12px;margin-top:10px}
 .planon{color:var(--warn);font-size:14px;margin-bottom:6px}
-#plan_cancel,#proc_reload{margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
-#plan_msg,#prog_msg,#proc_msg,#clip_msg,#extra_msg{color:var(--dim);font-size:13px;margin-top:10px}
-#proc_box summary{cursor:pointer;list-style:none}#proc_box summary h3{display:inline}
-#proc_box summary::after{content:" ▾";color:var(--dim)}
+#plan_cancel,#proc_reload,#top_reload{margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
+#plan_msg,#prog_msg,#proc_msg,#top_msg,#clip_msg,#extra_msg{color:var(--dim);font-size:13px;margin-top:10px}
+#proc_box summary,#top_box summary{cursor:pointer;list-style:none}#proc_box summary h3,#top_box summary h3{display:inline}
+#proc_box summary::after,#top_box summary::after{content:" ▾";color:var(--dim)}
 textarea{width:100%;background:rgba(0,0,0,.3);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;resize:vertical;margin-bottom:10px}
 .devrow.bad b{color:var(--crit)}
 .jfoot .linkbtn{margin-left:auto;padding:0}

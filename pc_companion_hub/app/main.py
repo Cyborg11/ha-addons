@@ -349,6 +349,10 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     async def processes_list(request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "GET", "/api/processes", params=take(request, ("sort", "limit")), timeout=20.0)
 
+    @app.get("/api/top", dependencies=[Depends(require_ui_token)])
+    async def top_usage(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/top", params=take(request, ("n",)), timeout=20.0)
+
     @app.post("/api/processes/{pid}/kill", dependencies=[Depends(require_write)])
     async def process_kill(pid: int, request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "POST", f"/api/processes/{pid}/kill", what="Prozess beendet", detail=f"PID {pid}", timeout=20.0)

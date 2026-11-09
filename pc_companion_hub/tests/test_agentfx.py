@@ -61,12 +61,19 @@ def test_offline_pc_gives_409_and_unknown_pc_404(client):
 
 def test_view_only_devices_may_read_gallery_history_plan_but_nothing_else(client):
     h = {"Authorization": "Bearer " + view_token(client)}
-    for path in ("/api/gallery", "/api/gallery/thumb?name=a.png", "/api/gallery/file?name=a.png", "/api/jobs/history", "/api/power-plan"):
+    for path in ("/api/gallery", "/api/gallery/thumb?name=a.png", "/api/gallery/file?name=a.png", "/api/jobs/history", "/api/power-plan", "/api/top"):
         assert client.get(path, headers=h).status_code == 200, path
     for method, path in (("GET", "/api/programs"), ("GET", "/api/processes"), ("GET", "/api/screenshot"), ("GET", "/api/clipboard"),
                          ("POST", "/api/programs/comfy/start"), ("POST", "/api/processes/12/kill"), ("POST", "/api/job/a/cancel"),
                          ("POST", "/api/power-plan"), ("DELETE", "/api/power-plan"), ("POST", "/api/action/clipboard_set")):
         assert client.request(method, path, headers=h).status_code == 403, path
+
+
+def test_top5_is_relayed_with_only_known_parameters(client):
+    assert client.get("/api/top?n=5&evil=1&pc=ki-pc", headers=MASTER).status_code == 200
+    last = client.calls[-1]
+    assert last["pc"] == "ki-pc" and last["path"] == "/api/top" and last["params"] == {"n": "5"}
+    assert client.get("/api/top").status_code == 401
 
 
 def test_gallery_only_passes_known_parameters(client):

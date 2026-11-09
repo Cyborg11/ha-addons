@@ -118,6 +118,15 @@
         <div id="disks"></div>
       </article>
 
+      <details class="panel card c-top" id="top_box" data-feature="top5" hidden>
+        <summary><h3>Top 5 Programme</h3></summary>
+        <div class="seg" id="top_kinds"></div>
+        <div id="top_list" class="muted"></div>
+        <div class="muted small" id="top_hint"></div>
+        <button id="top_reload">Aktualisieren</button>
+        <div id="top_msg"></div>
+      </details>
+
       <article class="panel card c-hist" id="histcard">
         <h3>Verlauf <span class="muted">seit dem Start des Hubs, max. 14 Tage</span></h3>
         <div class="seg" id="h_range"></div>
@@ -305,6 +314,7 @@
 <script src="devices.js"></script>
 <script src="history.js"></script>
 <script src="agentfx.js"></script>
+<script src="top5.js"></script>
 <script src="gallery.js"></script>
 </body>
 </html>
