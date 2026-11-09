@@ -14,7 +14,7 @@ from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Reques
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import audit as audit_mod, auth, history as history_mod, notify as notify_mod
+from . import audit as audit_mod, auth, history as history_mod, logredact, notify as notify_mod
 from .hub import Hub
 from .wol import send_magic_packet
 
@@ -24,6 +24,7 @@ except ImportError:                      # pragma: no cover
     segno = None
 
 log = logging.getLogger("pc-companion-hub")
+logredact.install()          # Token aus Adressen im Zugriffsprotokoll entfernen
 # Home-Assistant-Ingress (Supervisor) hat diese Quelladresse; HA hat den Nutzer dann schon angemeldet.
 TRUSTED_PROXY_IPS = {"172.30.32.2"}
 STATIC = Path(__file__).parent / "static"

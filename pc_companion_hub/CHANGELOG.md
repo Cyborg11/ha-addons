@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.13.1
+- **Sicherheit:** Das Anmelde-Token stand bei jeder Live-Verbindung im Klartext im Add-on-Protokoll (`/ws?token=...` im Zugriffsprotokoll von uvicorn). Es wird jetzt durch `***` ersetzt. Wer Protokolle geteilt hat oder dem Protokoll nicht traut: Geräte unter „Geräte“ neu koppeln bzw. die PIN ändern.
+
 ## 0.13.0
 - **Top 5 Programme** (Dashboard, aufklappbar): nach GPU, CPU, RAM, Festplatte und Netzwerk. Gleichnamige Prozesse (z. B. Browser) sind zusammengefasst. Braucht den neuen Agenten (`top5` in `features`); auch für Nur-Ansicht-Geräte.
 - **Netzwerk:** Den Datenverkehr je Programm liefert Windows nur mit Administratorrechten, der Agent läuft bewusst ohne. Die Liste zeigt deshalb die Programme mit den meisten aktiven Verbindungen ins Netz und darunter den Gesamtdurchsatz der Netzwerkkarte. GPU, CPU, RAM und Festplatte sind je Programm gemessen.
