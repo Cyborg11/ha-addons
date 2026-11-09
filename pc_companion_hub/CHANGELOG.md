@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.12.0
+Neue Bereiche für die Zusatzfunktionen des Agenten (Phase 8). Sie erscheinen nur, wenn der Agent sie meldet (`features` in `/health`); mit einem älteren Agenten bleibt alles wie bisher.
+- **Energie-Plan** (Steuerung): „In 30 Min. / 1 / 2 / 4 Std.“ oder „Nach dem letzten KI-Job“ herunterfahren bzw. in den Ruhezustand, mit Anzeige und Abbrechen.
+- **Programme** (Steuerung): in der `config.yaml` des Agenten freigegebene Programme starten und beenden.
+- **Prozesse** (Steuerung): Liste nach CPU, RAM oder VRAM, einzelne Prozesse beenden.
+- **Zwischenablage** (Steuerung): Text an den PC senden, optional die Zwischenablage des PCs holen. Der Text kommt nie ins Protokoll.
+- **Screenshot** und **Bildschirm aus** (Steuerung).
+- **Galerie** (neuer Tab): neueste Bilder aus den Ausgabeordnern des Agenten, Vollbild-Ansicht, Speichern aufs Handy. Auch für Nur-Ansicht-Geräte.
+- **Job-Karte:** „Abbrechen“ für laufende KI-Jobs; im Tab KI-Tools der **Job-Verlauf**.
+- Alle neuen Aufrufe laufen über den Hub (Agent-Token bleibt dort), respektieren die Rechte je Gerät und erscheinen im Protokoll.
 ## 0.11.0
 - **Benachrichtigungen aufs Handy** über die Home-Assistant-App: KI-Job fertig oder fehlgeschlagen, PC online/offline (nach 20 s stabil; nach Herunterfahren über den Hub keine Offline-Meldung), GPU länger als 1 Minute über der Grenztemperatur. Einrichtung: Option `notify_service` (z. B. `notify.mobile_app_pixel_8`), dazu `notify_jobs`, `notify_pc_state`, `notify_temp_c` (0 = aus). Im Tab „Steuerung“ gibt es „Testbenachrichtigung senden“. Das Add-on bekommt dafür Zugriff auf die Home-Assistant-API (`homeassistant_api`).
 

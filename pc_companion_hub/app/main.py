@@ -29,8 +29,11 @@ TRUSTED_PROXY_IPS = {"172.30.32.2"}
 STATIC = Path(__file__).parent / "static"
 ALLOWED_ACTIONS = {
     "lock", "sleep", "shutdown", "restart", "restart_agent", "cancel_shutdown", "volume", "mute",
-    "media_play_pause", "media_next", "media_prev", "open_url",
+    "media_play_pause", "media_next", "media_prev", "open_url", "clipboard_set", "monitor_off",
 }
+SAFE_ID = re.compile(r"[A-Za-z0-9._:-]{1,80}")
+# Abfrageparameter, die je Funktion an den Agenten weitergereicht werden dürfen
+GALLERY_PARAMS = ("folder", "name", "w", "limit", "offset", "download")
 
 
 def load_options() -> dict:
@@ -298,6 +301,86 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     def status(hub: Hub = Depends(get_hub)):
         return hub.message()
 
+    # ---- Zusatzfunktionen des Agenten (Phase 8): Aufrufe werden durchgereicht ----
+    async def relay(request: Request, hub: Hub, method: str, path: str, *, params: dict | None = None, body=None,
+                    what: str | None = None, detail: str | None = None, timeout: float = 15.0) -> Response:
+        if hub.status != "online":
+            raise HTTPException(status_code=409, detail="PC ist nicht online")
+        code, content, ctype = await hub.agent_request(method, path, params, body, timeout)
+        if what:
+            record(request, what, pc=hub.name or hub.pc_id, detail=detail, ok=code < 300)
+        return Response(content=content, status_code=code, media_type=ctype, headers={"Cache-Control": "no-store"})
+
+    def take(request: Request, allowed: tuple[str, ...]) -> dict:
+        return {k: v for k, v in request.query_params.items() if k in allowed}
+
+    def safe_id(value: str) -> str:
+        if not SAFE_ID.fullmatch(value):
+            raise HTTPException(status_code=404, detail="ungültige ID")
+        return value
+
+    @app.get("/api/power-plan", dependencies=[Depends(require_ui_token)])
+    async def power_plan_get(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/power-plan")
+
+    @app.post("/api/power-plan", dependencies=[Depends(require_write)])
+    async def power_plan_set(request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
+        body = body if isinstance(body, dict) else {}
+        allowed = {k: body[k] for k in ("timer_minutes", "mode", "after_job") if k in body}
+        detail = ", ".join(f"{k}={v}" for k, v in allowed.items())
+        return await relay(request, hub, "POST", "/api/power-plan", body=allowed, what="Energie-Plan gesetzt", detail=detail)
+
+    @app.delete("/api/power-plan", dependencies=[Depends(require_write)])
+    async def power_plan_cancel(request: Request, which: str = "all", hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "DELETE", "/api/power-plan", params={"which": which}, what="Energie-Plan abgebrochen", detail=which)
+
+    @app.get("/api/programs", dependencies=[Depends(require_write)])
+    async def programs_list(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/programs")
+
+    @app.post("/api/programs/{pid}/{op}", dependencies=[Depends(require_write)])
+    async def program_op(pid: str, op: str, request: Request, hub: Hub = Depends(get_hub)):
+        if op not in ("start", "stop"):
+            raise HTTPException(status_code=404, detail="unbekannte Operation")
+        return await relay(request, hub, "POST", f"/api/programs/{safe_id(pid)}/{op}", what=f"Programm {'gestartet' if op == 'start' else 'beendet'}",
+                           detail=pid, timeout=20.0)
+
+    @app.get("/api/processes", dependencies=[Depends(require_write)])
+    async def processes_list(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/processes", params=take(request, ("sort", "limit")), timeout=20.0)
+
+    @app.post("/api/processes/{pid}/kill", dependencies=[Depends(require_write)])
+    async def process_kill(pid: int, request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "POST", f"/api/processes/{pid}/kill", what="Prozess beendet", detail=f"PID {pid}", timeout=20.0)
+
+    @app.get("/api/gallery", dependencies=[Depends(require_ui_token)])
+    async def gallery_list(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/gallery", params=take(request, GALLERY_PARAMS))
+
+    @app.get("/api/gallery/thumb", dependencies=[Depends(require_ui_token)])
+    async def gallery_thumb(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/gallery/thumb", params=take(request, GALLERY_PARAMS))
+
+    @app.get("/api/gallery/file", dependencies=[Depends(require_ui_token)])
+    async def gallery_file(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/gallery/file", params=take(request, GALLERY_PARAMS), timeout=60.0)
+
+    @app.get("/api/screenshot", dependencies=[Depends(require_write)])
+    async def screenshot(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/screenshot", params=take(request, ("width",)), what="Screenshot", timeout=25.0)
+
+    @app.get("/api/clipboard", dependencies=[Depends(require_write)])
+    async def clipboard_get(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/clipboard", what="Zwischenablage gelesen")
+
+    @app.post("/api/job/{job_id}/cancel", dependencies=[Depends(require_write)])
+    async def job_cancel(job_id: str, request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "POST", f"/api/job/{safe_id(job_id)}/cancel", what="Job-Abbruch angefordert", detail=job_id)
+
+    @app.get("/api/jobs/history", dependencies=[Depends(require_ui_token)])
+    async def jobs_history(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/jobs/history", params=take(request, ("limit",)))
+
     @app.get("/api/notify", dependencies=[Depends(require_ui_token)])
     def notify_info():
         return {"configured": ha.configured, "service": ha.service if ha.configured else "", "jobs": notifier.jobs,
@@ -342,7 +425,8 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         code, data = await hub.agent_action(name, body)
         if code == 200 and name in ("shutdown", "sleep", "restart"):
             notifier.expect_power_action(hub.pc_id)         # dann keine „PC ist offline“-Meldung
-        detail = ", ".join(f"{k}={str(v)[:60]}" for k, v in (body or {}).items()) if isinstance(body, dict) else None
+        # Text der Zwischenablage nie ins Protokoll schreiben, nur die Länge
+        detail = ", ".join((f"text={len(str(v))} Zeichen" if k == "text" else f"{k}={str(v)[:60]}") for k, v in (body or {}).items()) if isinstance(body, dict) else None
         record(request, "Aktion: " + name, pc=hub.name or hub.pc_id, detail=detail, ok=code == 200)
         return JSONResponse(data, status_code=code)
 
