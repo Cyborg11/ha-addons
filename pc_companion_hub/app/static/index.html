@@ -367,6 +367,27 @@
   <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><span>Dateien</span></button>
 </nav>
 
+<div id="st_art" class="sheet" hidden>
+  <div class="sheetbox artbox" role="dialog" aria-modal="true" aria-labelledby="st_art_title">
+    <div class="artmain">
+      <h3 id="st_art_title"></h3>
+      <div class="seg" id="st_art_tabs" role="tablist"></div>
+      <div id="st_art_preview" class="artpreview" hidden>
+        <img id="st_art_img" alt="">
+        <div class="row"><button id="st_art_apply" class="primary stctl">Übernehmen</button><button id="st_art_cancel">Abbrechen</button></div>
+      </div>
+      <div id="st_art_grid" class="stgrid artgrid"></div>
+      <button id="st_art_more" hidden>Mehr laden</button>
+      <div id="st_art_msg" class="muted"></div>
+      <div class="row artfoot">
+        <button id="st_art_reset" class="stctl" hidden>Auf Standard zurücksetzen</button>
+        <button id="st_art_close">Schließen</button>
+      </div>
+      <div id="st_art_note" class="hint" hidden>Steam zeigt neue eigene Bilder meist erst nach einem Neustart des Steam-Clients. <button id="st_art_exit" class="linkbtn stctl" type="button">Steam jetzt beenden</button></div>
+    </div>
+  </div>
+</div>
+
 <div id="launchtoast" class="toast" role="status" hidden></div>
 
 <div id="st_sheet" class="sheet" hidden>
@@ -377,6 +398,7 @@
       <div id="st_sheet_meta" class="sheetmeta"></div>
       <div class="row">
         <button id="st_launch" class="primary stctl">Starten</button>
+        <button id="st_art_open" class="stctl">Bilder ändern</button>
         <button id="st_stop" class="danger stctl" hidden>Beenden</button>
         <button id="st_sheet_close">Schließen</button>
       </div>

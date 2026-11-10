@@ -24,7 +24,7 @@ Mit einem Agenten ab Phase 8 (PCCompanion, `GET /health` meldet `features`) ersc
 | Energie-Plan, Prozesse, Zwischenablage senden, Bildschirm aus | keine |
 | Programme | `programs:` mit den erlaubten Programmen |
 | Galerie | `gallery.folders:` mit Ausgabeordnern; Vorschaubilder brauchen `Pillow` |
-| Spiele (Steam) | wird automatisch erkannt (Steam installiert); Einstellungen unter `steam:` in der `config.yaml` des Agenten |
+| Spiele (Steam) | wird automatisch erkannt (Steam installiert); Einstellungen unter `steam:` in der `config.yaml` des Agenten. Für „Bilder ändern“ (Cover, Header, Hero, Logo) dort `steam.griddb_key` eintragen: kostenloser API-Schlüssel von steamgriddb.com (Profil → Preferences → API). Ohne Schlüssel lässt sich ein eigenes Bild nur zurücksetzen. |
 | Screenshot | `Pillow` |
 | Zwischenablage vom PC holen | `clipboard.allow_read: true` |
 | Job-Abbruch | die Tools (SIG, MediaAI) über `ai-core` mit `aicore.pcc` |

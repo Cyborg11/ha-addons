@@ -31,7 +31,7 @@ def client(tmp_path):
             hub.agent_request = fake
 
             async def fetch(method, path, params=None, body=None, timeout=15.0, extra_headers=None, pid=pid, fake=fake):
-                if "/api/steam/art/" in path:
+                if method == "GET" and "/api/steam/art/" in path:
                     calls.append({"pc": pid, "method": method, "path": path, "params": params, "extra": extra_headers})
                     if (extra_headers or {}).get("If-None-Match") == '"v1"':
                         return 304, b"", "image/jpeg", {"etag": '"v1"'}
@@ -184,3 +184,39 @@ def test_steam_downloads_is_readable_by_view_devices_and_relayed(client):
     assert client.calls[-1]["path"] == "/api/steam/downloads" and client.calls[-1]["params"] is None
     assert client.get("/api/steam/downloads").status_code == 401
     assert client.get("/api/steam/downloads", headers=MASTER).headers["cache-control"] == "no-store"
+
+
+# ---- Steam Bilder ändern (Phase 9.2) ----
+def test_steam_art_change_needs_write_rights_and_validates_input(client):
+    v = {"Authorization": "Bearer " + view_token(client)}
+    n = len(client.calls)
+    assert client.put("/api/steam/art/730/cover", headers=v, json={"griddb_id": 5}).status_code == 403
+    assert client.delete("/api/steam/art/730/cover", headers=v).status_code == 403
+    assert client.put("/api/steam/art/730/cover", json={"griddb_id": 5}).status_code == 401
+    for gid in ("x", 0, -3, True, None, 2 ** 41):
+        assert client.put("/api/steam/art/730/cover", headers=MASTER, json={"griddb_id": gid}).status_code == 400, gid
+    assert client.put("/api/steam/art/730/cover", headers=MASTER, json={"url": "https://evil.example"}).status_code == 400   # nie eine freie URL
+    assert client.put("/api/steam/art/730/bogus", headers=MASTER, json={"griddb_id": 5}).status_code == 400
+    assert client.put("/api/steam/art/0/cover", headers=MASTER, json={"griddb_id": 5}).status_code == 400
+    assert client.delete("/api/steam/art/730/bogus", headers=MASTER).status_code == 400
+    assert len(client.calls) == n
+
+
+def test_steam_art_change_is_relayed_with_only_the_id_and_logged(client):
+    assert client.put("/api/steam/art/730/hero?pc=ki-pc", headers=MASTER, json={"griddb_id": 77, "url": "https://evil.example", "x": 1}).status_code == 200
+    put = [c for c in client.calls if c["method"] == "PUT"][-1]
+    assert put["pc"] == "ki-pc" and put["path"] == "/api/steam/art/730/hero" and put["body"] == {"griddb_id": 77}
+    assert client.delete("/api/steam/art/730/hero", headers=MASTER).status_code == 200
+    raw = json.dumps(client.get("/api/audit", headers=MASTER).json(), ensure_ascii=False)
+    for text in ("Cover geändert", "Cover zurückgesetzt", "SteamGridDB 77", "hero"):
+        assert text in raw, text
+
+
+def test_steam_griddb_reads_are_open_to_view_devices_and_thumbs_are_cacheable(client):
+    h = {"Authorization": "Bearer " + view_token(client)}
+    assert client.get("/api/steam/griddb/730/cover?page=2&evil=1", headers=h).status_code == 200
+    assert client.calls[-1]["path"] == "/api/steam/griddb/730/cover" and client.calls[-1]["params"] == {"page": "2"}
+    assert client.get("/api/steam/griddb/thumb/42", headers=h).headers["cache-control"] == "private, max-age=3600"
+    assert client.get("/api/steam/griddb/730/bogus", headers=h).status_code == 400
+    assert client.get("/api/steam/griddb/thumb/0", headers=h).status_code == 400
+    assert client.get("/api/steam/griddb/730/cover").status_code == 401 and client.get("/api/steam/griddb/thumb/1").status_code == 401

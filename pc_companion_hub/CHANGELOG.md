@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.0
+Steam-Fernsteuerung, Teil 2: Bilder ändern (braucht den Agenten mit Phase 9.2; Vorschläge nur mit `steam.griddb_key` in der `config.yaml` des Agenten).
+- **Bilder ändern** in der Detailansicht eines Spiels: Reiter Cover, Header, Hero und Logo, Vorschläge von SteamGridDB als Raster (mit „Mehr laden“), Antippen zeigt eine Vorschau, „Übernehmen“ speichert das Bild beim Spiel auf dem PC. „Auf Standard zurücksetzen“ entfernt das eigene Bild (geht auch ohne Schlüssel).
+- Der Hub lädt nie Bilder von außen: Vorschauen und das gewählte Bild holt der Agent (nur von steamgriddb.com) und der Hub reicht sie durch; Vorschauen bleiben im Browser eine Stunde gecacht.
+- Hinweis, dass Steam neue eigene Bilder meist erst nach einem Neustart des Clients zeigt, mit Knopf „Steam jetzt beenden“ (mit Rückfrage).
+- Ohne Schlüssel zeigt die Oberfläche statt der Vorschläge eine Anleitung zum Eintragen. Alle Änderungen stehen im Protokoll („Cover geändert“, „Cover zurückgesetzt“).
+
 ## 0.18.0
 Steam-Fernsteuerung, Teil 3: „Aufwecken und starten“ (braucht für den Energiesparmodus den Agenten mit Phase 9.3).
 - **Aufwecken und starten:** Ist der PC aus, zeigt die Offline-Seite die zuletzt gespielten Spiele. Antippen weckt den PC und startet das Spiel, sobald der Agent und Steam bereit sind. Die Warte-Seite zeigt „Startet danach: …“ mit Abbrechen, danach kommt eine Meldung über Erfolg oder den Grund des Scheiterns; alles steht im Protokoll.

@@ -450,6 +450,37 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     def clean_name(value: str) -> str:
         return "".join(c for c in value if c.isprintable()).strip()[:80]
 
+    @app.get("/api/steam/griddb/thumb/{gid}", dependencies=[Depends(require_ui_token)])
+    async def steam_griddb_thumb(gid: int, request: Request, hub: Hub = Depends(get_hub)):
+        if not 0 < gid < 2 ** 40:
+            raise HTTPException(status_code=400, detail="ungültige ID")
+        return await relay(request, hub, "GET", f"/api/steam/griddb/thumb/{gid}", timeout=20.0, cache="private, max-age=3600")
+
+    @app.get("/api/steam/griddb/{appid}/{kind}", dependencies=[Depends(require_ui_token)])
+    async def steam_griddb(appid: int, kind: str, request: Request, hub: Hub = Depends(get_hub)):
+        if kind not in STEAM_KINDS:
+            raise HTTPException(status_code=400, detail="ungültige Bildart")
+        return await relay(request, hub, "GET", f"/api/steam/griddb/{steam_appid(appid)}/{kind}", params=take(request, ("page",)), timeout=25.0)
+
+    @app.put("/api/steam/art/{appid}/{kind}", dependencies=[Depends(require_write)])
+    async def steam_art_set(appid: int, kind: str, request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
+        if kind not in STEAM_KINDS:
+            raise HTTPException(status_code=400, detail="ungültige Bildart")
+        gid = (body or {}).get("griddb_id")
+        if isinstance(gid, bool) or not isinstance(gid, int) or not 0 < gid < 2 ** 40:
+            raise HTTPException(status_code=400, detail="griddb_id muss eine positive Ganzzahl sein")
+        steam_appid(appid)
+        return await relay(request, hub, "PUT", f"/api/steam/art/{appid}/{kind}", body={"griddb_id": gid},
+                           what="Cover geändert", detail=f"{await steam_label(hub, appid)}: {kind}, SteamGridDB {gid}", timeout=40.0)
+
+    @app.delete("/api/steam/art/{appid}/{kind}", dependencies=[Depends(require_write)])
+    async def steam_art_reset(appid: int, kind: str, request: Request, hub: Hub = Depends(get_hub)):
+        if kind not in STEAM_KINDS:
+            raise HTTPException(status_code=400, detail="ungültige Bildart")
+        steam_appid(appid)
+        return await relay(request, hub, "DELETE", f"/api/steam/art/{appid}/{kind}", what="Cover zurückgesetzt",
+                           detail=f"{await steam_label(hub, appid)}: {kind}")
+
     @app.post("/api/steam/games/{appid}/launch", dependencies=[Depends(require_write)])
     async def steam_launch(appid: int, request: Request, body: dict | None = Body(default=None), wake: bool = False, name: str = "",
                            hub: Hub = Depends(get_hub)):
