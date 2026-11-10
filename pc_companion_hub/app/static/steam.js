@@ -29,7 +29,7 @@
     if (cache.has(key)) { img.src = cache.get(key); if (then) then(true); return; }
     queue.push(async () => {
       try {
-        const r = await fetch(pcq("api/steam/art/" + appid + "/" + kind + "?w=" + w), { headers: authHeaders() });
+        const r = await fetch(pcq("api/steam/art/" + appid + "/" + kind + "?w=" + w + "&v=" + (ver || 0)), { headers: authHeaders() });   // v: neue Bilder bekommen eine neue Adresse, sonst hielte der Browser das alte 24 h
         if (!r.ok) throw new Error();
         const url = URL.createObjectURL(await r.blob());
         cache.set(key, url); img.src = url; if (then) then(true);
@@ -157,8 +157,9 @@
     for (const [k, v] of rows) { const d = document.createElement("div"), a = document.createElement("span"), b = document.createElement("b"); a.textContent = k; b.textContent = v; d.append(a, b); box.append(d); }
     $("st_launch").hidden = isRun; $("st_launch").disabled = !g.launchable;
     $("st_stop").hidden = !isRun;
-    if (sheetArt !== g.appid) {
-      sheetArt = g.appid;
+    const sk = g.appid + "|" + g.art_ver;                            // auch ein getauschtes Cover im Detailblatt neu laden
+    if (sheetArt !== sk) {
+      sheetArt = sk;
       const img = $("st_sheet_img");
       img.removeAttribute("src");
       loadArt(img, g.appid, "cover", 600, g.art_ver, covers);
