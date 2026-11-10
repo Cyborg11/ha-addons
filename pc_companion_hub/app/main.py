@@ -34,6 +34,8 @@ ALLOWED_ACTIONS = {
 }
 SAFE_ID = re.compile(r"[A-Za-z0-9._:-]{1,80}")
 # Abfrageparameter, die je Funktion an den Agenten weitergereicht werden dürfen
+API_LOCK_AFTER = 20        # falsche Bearer-Token je Adresse, dann 15 Minuten Sperre
+API_GLOBAL_LIMIT = 300     # insgesamt pro Stunde
 GALLERY_PARAMS = ("folder", "name", "w", "limit", "offset", "download")
 
 
@@ -107,6 +109,9 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     devices = auth.DeviceStore(data_dir / "devices.json")
     pairing = auth.Pairing()
     limiter = auth.Limiter()
+    # Falsche Bearer-Token an der API (Ausprobieren des ui_token): großzügiger als bei der PIN, weil ein abgemeldetes Gerät
+    # ein paar Mal anklopft, bevor es zur Anmeldung wechselt.
+    api_limiter = auth.Limiter(lock_after=API_LOCK_AFTER, lock_s=auth.LOCK_S, global_limit=API_GLOBAL_LIMIT)
     ws_devices: dict[WebSocket, str] = {}
     audit = audit_mod.AuditLog(data_dir / "audit.log")
     history = history_mod.History(data_dir / "history.db")
@@ -126,6 +131,8 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         h.on_status = lambda hub_, n=notifier: n.on_status(hub_.pc_id, pc_label(hub_), hub_.status)
     if not opts.get("ui_token") and not opts.get("pin"):
         log.warning("Weder pin noch ui_token sind gesetzt – alle API-Aufrufe werden abgelehnt.")
+    elif opts.get("ui_token") and len(str(opts["ui_token"])) < 16:
+        log.warning("Der ui_token hat weniger als 16 Zeichen – besser ein langes Zufallstoken wählen.")
     elif opts.get("pin") and len(str(opts["pin"])) < 6:
         log.warning("Die PIN hat weniger als 6 Zeichen – besser länger wählen (Sperre nach 5 Fehlversuchen besteht trotzdem).")
 
@@ -139,6 +146,13 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
             h.stop()
 
     app = FastAPI(title="PC-Companion Hub", lifespan=lifespan)
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        resp = await call_next(request)
+        resp.headers.setdefault("X-Content-Type-Options", "nosniff")      # kein MIME-Raten (hochgeladene/relayte Dateien)
+        resp.headers.setdefault("Referrer-Policy", "no-referrer")
+        return resp
     app.state.hub = hub
     app.state.hubs = hubs
 
@@ -153,14 +167,19 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         return [{"id": pid, "name": h.name} for pid, h in hubs.items()]
 
     def principal(given: str | None, ip: str) -> dict | None:
-        """Wer ruft auf? Hauptschlüssel (ui_token), gekoppeltes Gerät oder HA-Ingress."""
-        if token_ok(opts.get("ui_token", ""), given):
-            return {"kind": "master", "role": "full"}
-        dev = devices.verify(given)
-        if dev:
-            return {"kind": "device", "id": dev["id"], "role": dev.get("role", "full")}
+        """Wer ruft auf? Hauptschlüssel (ui_token), gekoppeltes Gerät oder HA-Ingress.
+        Wer zu oft ein falsches Token vorzeigt, wird gesperrt (dann zählt auch ein richtiges nicht mehr)."""
+        locked = bool(given) and api_limiter.wait_s(ip) > 0
+        if not locked:
+            if token_ok(opts.get("ui_token", ""), given):
+                return {"kind": "master", "role": "full"}
+            dev = devices.verify(given)
+            if dev:
+                return {"kind": "device", "id": dev["id"], "role": dev.get("role", "full")}
         if ip in TRUSTED_PROXY_IPS:
             return {"kind": "ingress", "role": "full"}
+        if given and not locked:
+            api_limiter.fail(ip)
         return None
 
     def who_label(who: dict | None) -> str:
@@ -181,6 +200,9 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         given = authorization[7:] if authorization and authorization.lower().startswith("bearer ") else None
         who = principal(given, client_ip(request))
         if not who:
+            wait = api_limiter.wait_s(client_ip(request)) if given else 0
+            if wait:
+                raise HTTPException(status_code=429, detail="Zu viele falsche Anmeldungen.", headers={"Retry-After": str(wait)})
             raise HTTPException(status_code=401, detail="unauthorized")
         request.state.principal = who
 

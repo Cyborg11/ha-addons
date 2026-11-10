@@ -167,7 +167,8 @@ class Pairing:
 class Limiter:
     """Sperrt Anmeldeversuche nach Fehlschlägen: je Client-IP und insgesamt."""
 
-    def __init__(self):
+    def __init__(self, lock_after: int = LOCK_AFTER, lock_s: int = LOCK_S, global_limit: int = GLOBAL_LIMIT):
+        self.lock_after, self.lock_s, self.global_limit = lock_after, lock_s, global_limit
         self.ips: dict[str, list[float]] = {}     # ip -> [fehler, gesperrt_bis]
         self.recent: list[float] = []              # Zeitpunkte der letzten Fehlversuche
         self.global_until = 0.0
@@ -184,10 +185,10 @@ class Limiter:
             self.ips = {k: v for k, v in self.ips.items() if v[1] > t}
         entry = self.ips.setdefault(ip, [0, 0.0])
         entry[0] += 1
-        if entry[0] >= LOCK_AFTER:
-            entry[0], entry[1] = 0, t + LOCK_S
+        if entry[0] >= self.lock_after:
+            entry[0], entry[1] = 0, t + self.lock_s
         self.recent = [x for x in self.recent if x > t - 3600] + [t]
-        if len(self.recent) >= GLOBAL_LIMIT:
+        if len(self.recent) >= self.global_limit:
             self.global_until, self.recent = t + GLOBAL_LOCK_S, []
             log.warning("Sehr viele fehlgeschlagene Anmeldungen – Anmeldung für 1 Stunde gesperrt.")
 
