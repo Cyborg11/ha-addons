@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.2
+- **Sicherheit:** Das Ausprobieren des `ui_token` direkt an der API (ohne den Anmeldedialog) war unbegrenzt möglich; nur die PIN-Anmeldung hatte eine Sperre. Jetzt sperren 20 falsche Token je Adresse für 15 Minuten (HTTP 429; in der Sperre zählt auch ein richtiges Token nicht), insgesamt 300 pro Stunde. Gilt auch für die Live-Verbindung. Anfragen ganz ohne Token zählen nicht.
+- Antworten tragen jetzt `X-Content-Type-Options: nosniff` und `Referrer-Policy: no-referrer`.
+- Warnung im Protokoll, wenn der `ui_token` kürzer als 16 Zeichen ist.
+
 ## 0.13.1
 - **Sicherheit:** Das Anmelde-Token stand bei jeder Live-Verbindung im Klartext im Add-on-Protokoll (`/ws?token=...` im Zugriffsprotokoll von uvicorn). Es wird jetzt durch `***` ersetzt. Wer Protokolle geteilt hat oder dem Protokoll nicht traut: Geräte unter „Geräte“ neu koppeln bzw. die PIN ändern.
 

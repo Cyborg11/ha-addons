@@ -201,3 +201,34 @@ def test_nothing_configured_rejects_all(tmp_path, clock):
         assert login(c, "").status_code == 401
         assert login(c, "irgendwas").status_code == 401
         assert c.get("/api/status", headers=bearer("")).status_code == 401
+
+
+def test_guessing_the_master_token_on_the_api_gets_locked(client, clock):
+    for _ in range(main.API_LOCK_AFTER - 1):
+        assert client.get("/api/status", headers=bearer("falsch")).status_code == 401
+    r = client.get("/api/status", headers=bearer("falsch"))          # der Fehlversuch, der sperrt
+    assert r.status_code == 429 and int(r.headers["Retry-After"]) > 0
+    # auch das richtige Token zählt während der Sperre nicht (sonst wäre Raten trotz Sperre möglich)
+    assert client.get("/api/status", headers=MASTER).status_code == 429
+    clock.t += auth.LOCK_S + 5
+    assert client.get("/api/status", headers=MASTER).status_code == 200
+
+
+def test_requests_without_any_token_do_not_count_as_guessing(client):
+    for _ in range(main.API_LOCK_AFTER + 5):
+        assert client.get("/api/status").status_code == 401
+    assert client.get("/api/status", headers=MASTER).status_code == 200
+
+
+def test_websocket_guessing_counts_too(client):
+    from starlette.websockets import WebSocketDisconnect
+    for _ in range(main.API_LOCK_AFTER):
+        with pytest.raises(WebSocketDisconnect):
+            with client.websocket_connect("/ws?token=falsch"):
+                pass
+    assert client.get("/api/status", headers=MASTER).status_code == 429
+
+
+def test_security_headers_are_set(client):
+    r = client.get("/healthz")
+    assert r.headers["x-content-type-options"] == "nosniff" and r.headers["referrer-policy"] == "no-referrer"
