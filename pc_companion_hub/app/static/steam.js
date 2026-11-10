@@ -241,6 +241,114 @@
   }
   dlbox.addEventListener("toggle", dlWatch);
 
+  /* ---- Bilder ändern (SteamGridDB) ---- */
+  const ART_KINDS = [["cover", "Cover", "2/3"], ["header", "Header", "920/430"], ["hero", "Hero", "96/31"], ["logo", "Logo", "16/9"]];
+  let artApp = 0, artKind = "cover", artPage = 0, artSel = 0, artSeq = 0;
+  const artThumbs = new Map();
+  let artNsfw = store.get("pcc_steam_nsfw") === "1";                 // wird pro Gerät gemerkt, Standard: aus
+  const artGame = () => games.find(g => g.appid === artApp);
+
+  function openArt(appid) {
+    artApp = appid; artKind = "cover";
+    $("st_art").hidden = false; $("st_art_note").hidden = true;
+    $("st_art_nsfw").checked = artNsfw;
+    $("st_art_title").textContent = "Bilder ändern – " + (artGame() || {}).name;
+    paintArtTabs(); loadSuggestions(true);
+  }
+  function closeArt() { artSeq++; artApp = 0; $("st_art").hidden = true; }
+  function paintArtTabs() {
+    const box = $("st_art_tabs");
+    box.textContent = "";
+    for (const [k, label] of ART_KINDS) {
+      const b = document.createElement("button");
+      b.className = "segbtn" + (k === artKind ? " on" : ""); b.textContent = label;
+      b.onclick = () => { artKind = k; paintArtTabs(); loadSuggestions(true); };
+      box.append(b);
+    }
+    const g = artGame();
+    $("st_art_reset").hidden = !(g && g.has_custom && g.has_custom[artKind]);
+  }
+  function artMsg(t) { $("st_art_msg").textContent = t || ""; }
+  async function loadSuggestions(reset) {
+    const my = ++artSeq, grid = $("st_art_grid");
+    if (reset) { artPage = 0; artSel = 0; grid.textContent = ""; $("st_art_preview").hidden = true; $("st_art_more").hidden = true; }
+    if (!features.includes("steam_griddb")) {
+      artMsg("Für Vorschläge einen SteamGridDB-Schlüssel eintragen: steam.griddb_key in der config.yaml des Agenten (Schlüssel unter steamgriddb.com → Profil → Preferences → API).");
+      return;
+    }
+    artMsg("Lade Vorschläge …");
+    try {
+      const d = await call("GET", "api/steam/griddb/" + artApp + "/" + artKind + "?page=" + artPage + (artNsfw ? "&nsfw=true" : ""));
+      if (my !== artSeq) return;
+      const ratio = (ART_KINDS.find(x => x[0] === artKind) || [])[2] || "2/3";
+      grid.classList.toggle("wide", artKind === "header" || artKind === "hero" || artKind === "logo");
+      for (const it of d.items || []) {
+        const b = document.createElement("button");
+        b.className = "sttile arttile"; b.dataset.id = it.id;
+        const frame = document.createElement("div"), img = document.createElement("img"), cap = document.createElement("span");
+        frame.className = "stcover"; frame.style.aspectRatio = ratio; img.alt = "";
+        if (it.nsfw) { const nb = document.createElement("span"); nb.className = "stbadge nsfw"; nb.textContent = "NSFW"; frame.append(nb); }
+        cap.className = "gcap"; cap.textContent = [it.width && it.height ? it.width + "×" + it.height : "", it.style || ""].filter(Boolean).join(" · ");
+        frame.append(img); b.append(frame, cap);
+        b.onclick = () => selectArt(it, b);
+        grid.append(b);
+        loadBlob(img, "api/steam/griddb/thumb/" + it.id);
+      }
+      artPage = (d.page || 0) + 1;
+      $("st_art_more").hidden = !d.has_more;
+      artMsg(grid.children.length ? "" : "Keine Vorschläge gefunden.");
+    } catch (e) { if (my === artSeq) artMsg(e.message); }
+  }
+  function loadBlob(img, path) {
+    const key = current + "|" + path;
+    if (artThumbs.has(key)) { img.src = artThumbs.get(key); return; }
+    queue.push(async () => {
+      try {
+        const r = await fetch(pcq(path), { headers: authHeaders() });
+        if (!r.ok) throw new Error();
+        const url = URL.createObjectURL(await r.blob());
+        artThumbs.set(key, url); img.src = url;
+      } catch (e) { /* Platzhalter bleibt */ }
+    });
+    pump();
+  }
+  function selectArt(it, btn) {
+    artSel = it.id;
+    for (const b of $("st_art_grid").children) b.classList.toggle("sel", b === btn);
+    const prev = $("st_art_preview");
+    prev.hidden = false;
+    $("st_art_img").src = btn.querySelector("img").src || "";
+    prev.scrollIntoView({ block: "nearest" });
+  }
+  async function afterArtChange(text) {
+    await load(true); paintGrid(); paintArtTabs();
+    artMsg(text); $("st_art_note").hidden = false;
+  }
+  $("st_art_apply").onclick = async () => {
+    if (!artSel) return;
+    artMsg("Lade das Bild auf den PC …");
+    try { await call("PUT", "api/steam/art/" + artApp + "/" + artKind, { griddb_id: artSel }); $("st_art_preview").hidden = true; artSel = 0; await afterArtChange("Gespeichert."); }
+    catch (e) { artMsg(e.message); }
+  };
+  $("st_art_cancel").onclick = () => { artSel = 0; $("st_art_preview").hidden = true; for (const b of $("st_art_grid").children) b.classList.remove("sel"); };
+  $("st_art_reset").onclick = async () => {
+    if (!confirm("Das eigene Bild entfernen und wieder das Steam-Standardbild verwenden?")) return;
+    try { await call("DELETE", "api/steam/art/" + artApp + "/" + artKind); await afterArtChange("Zurückgesetzt."); }
+    catch (e) { artMsg(e.message); }
+  };
+  $("st_art_more").onclick = () => loadSuggestions(false);
+  $("st_art_nsfw").onchange = () => { artNsfw = $("st_art_nsfw").checked; store.set("pcc_steam_nsfw", artNsfw ? "1" : "0"); loadSuggestions(true); };
+  $("st_art_close").onclick = closeArt;
+  $("st_art").addEventListener("click", e => { if (e.target === $("st_art")) closeArt(); });
+  $("st_art_exit").onclick = async () => {
+    if (!confirm("Steam jetzt beenden? Laufende Spiele und Downloads werden dabei unterbrochen.")) return;
+    try { await call("POST", "api/steam/open/exit"); artMsg("Steam wird beendet. Danach am PC wieder starten, dann sind die neuen Bilder sichtbar."); }
+    catch (e) { artMsg(e.message); }
+  };
+  $("st_art_open").onclick = () => { const id = openId; closeSheet(); openArt(id); };
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("st_art").hidden) closeArt(); });
+  window.addEventListener("pcc:pc", () => { closeArt(); artThumbs.forEach(u => URL.revokeObjectURL(u)); artThumbs.clear(); });
+
   /* ---- Aufwecken und starten (Offline-Seite, Warte-Seite, Hinweis) ---- */
   const RECENT_KEY = () => "pcc_steam_recent|" + current;
   function saveRecent() {
