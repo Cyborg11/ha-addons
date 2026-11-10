@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.14.0
+Überarbeitete Oberfläche nach einem Rundgang als Nutzer.
+- **Steuerung in Unterreitern:** „Steuern“ (Energie, Medien, Agent, Energie-Plan, Link), „Werkzeuge“ (Prozesse, Zwischenablage), „Geräte & Protokoll“. Der Reiter merkt sich die Auswahl; „Werkzeuge“ erscheint nur, wenn der Agent Prozesse oder Zwischenablage kann.
+- **KI-Tools:** Die freigegebenen Programme des Agenten (z. B. ComfyUI starten/beenden) stehen jetzt hier statt unter „Steuerung“.
+- **Offline-Seite:** „Zuletzt online vor …“ (bleibt auch nach einem Neustart des Hubs erhalten), die letzten Werte vor dem Ausfall, ein Hinweis, dass Aufwecken nichts hilft, wenn nur der Agent nicht läuft, und der **Verlauf** ist auch ohne PC ansehbar. Beim Aufwecken zeigt ein Balken den Fortschritt.
+- **Galerie:** Vor/Zurück im Vollbild (Pfeile, Tastatur ←/→, Wischen) mit Zähler „3 / 64“, Nachbarbilder werden vorgeladen; Dateinamen unter den Kacheln; bei wenigen Ordnern Schalter statt Auswahlliste.
+- **Dashboard:** Laufwerke zeigen frei/gesamt in GB bzw. TB (braucht den neuen Agenten; ältere zeigen nur Prozent), Diagramme haben Achsenwerte, die Leuchtränder der Ringe sind nicht mehr abgeschnitten, das Raster hat keine Lücke mehr.
+- **Top 5:** Drehende Ladeanzeige während der Messung.
+- **Dateien:** Ablagefläche (Ziehen und Ablegen bzw. Antippen) und die Liste „Zuletzt gesendet“ (nur in diesem Browser gemerkt, 20 Einträge).
+
 ## 0.13.2
 - **Sicherheit:** Das Ausprobieren des `ui_token` direkt an der API (ohne den Anmeldedialog) war unbegrenzt möglich; nur die PIN-Anmeldung hatte eine Sperre. Jetzt sperren 20 falsche Token je Adresse für 15 Minuten (HTTP 429; in der Sperre zählt auch ein richtiges Token nicht), insgesamt 300 pro Stunde. Gilt auch für die Live-Verbindung. Anfragen ganz ohne Token zählen nicht.
 - Antworten tragen jetzt `X-Content-Type-Options: nosniff` und `Referrer-Policy: no-referrer`.

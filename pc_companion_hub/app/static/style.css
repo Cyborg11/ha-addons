@@ -241,3 +241,37 @@ textarea{width:100%;background:rgba(0,0,0,.3);color:var(--fg);border:1px solid v
 .vbar button{padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.08);min-height:40px;margin-left:6px}
 .vbar button.primary{background:linear-gradient(135deg,#2fd8a0,#22a8c8);color:#04110c;border:0}
 #gal_reload,#clip_get{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
+
+/* ---------- Version 0.14: Unterreiter, Offline-Seite, Galerie, Dateien ---------- */
+.subnav{position:sticky;top:0;z-index:4;margin:0 0 12px;padding:8px 0;background:linear-gradient(180deg,var(--bg) 70%,transparent);gap:8px}
+.subnav .segbtn{flex:1;min-height:42px;font-size:13px}
+.subview[hidden]{display:none!important}
+body.readonly #progpanel{display:none!important}
+.rwrap svg{overflow:visible;filter:drop-shadow(0 0 6px var(--c))}.ring .fg{filter:none}
+.card .disk small{display:block;margin-top:5px;font-size:11px}
+@media (min-width:1000px){.c-disk{grid-column:span 2}}
+.offstats{margin:4px 0 14px;color:var(--fg);font-size:13px;opacity:.85}
+#offseen{font-size:13px;margin:-6px 0 12px}
+#offhint{margin-top:16px;font-size:12px}
+#offhist_btn{display:block;margin:6px auto 0}
+.offhist{width:100%;max-width:720px;margin:14px auto 0}
+.offhist .panel{margin:0}
+.wakebar{margin:16px 0 8px;height:10px}
+#wakehint{margin-top:10px}
+.spinner.sm{display:inline-block;width:16px;height:16px;border-width:2px;margin:0 8px 0 0;vertical-align:-3px}
+.loadrow{display:flex;align-items:center;font-size:13px;color:var(--dim);padding:8px 0}
+.gtile{position:relative}
+.gcap{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 5px;font-size:10.5px;line-height:1.2;text-align:left;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:linear-gradient(0deg,rgba(0,0,0,.72),transparent)}
+#gal_chips{margin-bottom:6px}
+.vstage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.vstage img{flex:1;min-height:0;max-height:100%;width:100%;object-fit:contain}
+.vnav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:48px;height:72px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.45);color:#fff;font-size:34px;line-height:1;display:grid;place-items:center;padding:0 0 4px}
+#viewer_prev{left:2px}#viewer_next{right:2px}
+.vnav:active{background:rgba(255,255,255,.18)}
+@media (hover:none){.vnav{opacity:.55}}
+#viewer_pos{margin-right:10px}
+.dropzone{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 14px;margin-top:12px;border:2px dashed var(--line);border-radius:16px;color:var(--dim);font-size:13px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.dropzone svg{width:30px;height:30px;color:var(--ok)}
+.dropzone:hover,.dropzone:focus-visible,.dropzone.over{border-color:var(--ok);background:rgba(52,232,164,.07);color:var(--fg);outline:0}
+#up_recent_box h3{justify-content:space-between}
+#up_recent_box .linkbtn{padding:0;font-size:12px;text-transform:none;letter-spacing:0}

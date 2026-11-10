@@ -71,7 +71,8 @@ Bei mehreren PCs zeigt die Leiste oben je PC einen Knopf mit Statuspunkt, dazu �
 
 Die Oberfläche liegt auf Port **8099**: `http://<pi-ip>:8099/`. Beim ersten Öffnen die `pin` eingeben (oder das `ui_token`). Das Add-on läuft mit `host_network`, damit das Wake-on-LAN-Paket ins LAN gelangt; der Port lässt sich daher nicht umlegen.
 
-Zustände: **online** (Live-Daten), **offline** (Knopf „PC aufwecken“), **startet** (Countdown bis 120 s).
+Zustände: **online** (Live-Daten), **offline** (Knopf „PC aufwecken“, zuletzt gesehen, letzte Werte, Verlauf), **startet** (Balken und Countdown bis 120 s).
+Reiter: **Dashboard**, **KI-Tools** (Web-Oberflächen aus `tools`, Programme des Agenten, Job-Verlauf), **Steuerung** (Unterreiter Steuern · Werkzeuge · Geräte & Protokoll), **Galerie** und **Dateien**.
 Das Sonnen-Symbol hält den Bildschirm an (Wake Lock) – für ein altes Handy als Dauer-Display im Querformat.
 
 ## Anmeldung am Handy

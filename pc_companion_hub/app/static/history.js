@@ -111,6 +111,7 @@
   renderControls();
   window.addEventListener("pcc:status", ev => { if (ev.detail === "online" && tab === "dash") load(false); });
   window.addEventListener("pcc:pc", () => { data = null; loadedPc = ""; });
+  window.addEventListener("pcc:histshow", () => { load(true); setTimeout(draw, 60); });   // Offline-Seite: der Verlauf liegt im Hub und ist auch ohne PC da
   window.addEventListener("resize", () => { if (tab === "dash" && !$("live").hidden) draw(); });
   setInterval(() => { if (tab === "dash" && !$("live").hidden) load(true); }, 60000);
   document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => { if (b.dataset.tab === "dash") setTimeout(() => { load(false); draw(); }, 50); }));

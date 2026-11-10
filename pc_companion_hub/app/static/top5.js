@@ -40,7 +40,8 @@
     const list = $("top_list");
     list.textContent = "";
     $("top_hint").textContent = HINT[kind];
-    if (!data) { list.textContent = busy ? "Messe …" : ""; list.className = "muted"; return; }
+    $("top_loading").hidden = !busy;
+    if (!data) { list.className = "muted"; return; }
     const rows = kind === "net" ? data.net.items : data[kind];
     if (kind === "gpu" && !data.gpu_available) { list.textContent = "Dieser PC liefert keine GPU-Daten je Programm."; list.className = "muted"; return; }
     if (!rows.length) { list.textContent = kind === "net" ? "Keine aktiven Verbindungen ins Netz." : "Nichts Auffälliges."; list.className = "muted"; return; }
@@ -75,7 +76,7 @@
   async function load() {
     if (busy || !features.includes("top5") || !box.open) return;
     busy = true;
-    if (!data) render();
+    render();
     try {
       const r = await fetch(pcq("api/top?n=5"), { headers: authHeaders() });
       const d = await r.json().catch(() => ({}));

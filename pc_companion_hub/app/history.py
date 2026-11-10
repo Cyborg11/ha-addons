@@ -75,6 +75,14 @@ class History:
             except sqlite3.Error as e:
                 log.warning("Verlauf nicht schreibbar: %s", e)
 
+    def last_t(self, pc: str) -> int | None:
+        """Zeitpunkt des letzten gespeicherten Messwerts (bekannt auch nach einem Neustart des Hubs)."""
+        if self.db is None:
+            return None
+        with self._lock:
+            row = self.db.execute("SELECT MAX(t) FROM samples WHERE pc = ?", [pc]).fetchone()
+        return row[0] if row and row[0] is not None else None
+
     def query(self, pc: str, hours: float) -> dict:
         hours = min(max(hours, 0.25), RETENTION_S / 3600)
         if self.db is None:

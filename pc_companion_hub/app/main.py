@@ -115,6 +115,8 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     ws_devices: dict[WebSocket, str] = {}
     audit = audit_mod.AuditLog(data_dir / "audit.log")
     history = history_mod.History(data_dir / "history.db")
+    for pid_, h_ in hubs.items():                 # „zuletzt online“ auch nach einem Neustart des Hubs kennen
+        h_.last_seen = history.last_t(pid_)
     ha = notify_mod.HaNotifier(opts.get("notify_service", ""), os.environ.get("SUPERVISOR_TOKEN"),
                                os.environ.get("HA_API_URL", "http://supervisor/core/api"))
     notifier = notify_mod.Notifier(opts, ha.send if ha.configured else _no_send)
