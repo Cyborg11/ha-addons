@@ -307,3 +307,11 @@ body.readonly .stctl{display:none!important}
 @media(min-width:700px){.sheet{align-items:center}.sheetbox{border-radius:22px}}
 @media(max-width:420px){.sheetbox{gap:12px;padding:14px}.sheetimg{width:36%}}
 .steamnow .row,.sheetbody .row,.row:has(#st_q){flex-wrap:wrap}#st_now_stop,#st_stop{color:var(--crit);border-color:rgba(255,93,108,.35);background:rgba(255,93,108,.08)}#st_launch:disabled{opacity:.45}#st_q{flex:1 1 100%}#st_sort{flex:1 1 0}
+
+/* ---- 0.17 Downloads & Speicher, Detailblatt kompakter ---- */
+#st_dlbox{margin-top:12px}#st_dlbox summary{cursor:pointer;list-style:none}#st_dlbox summary::-webkit-details-marker{display:none}#st_dlbox summary h3{margin:0}
+#st_dlbox[open] summary{margin-bottom:10px}
+.dlitem{display:grid;gap:5px;margin-bottom:12px}.dlitem .mh{display:flex;justify-content:space-between;gap:10px;font-size:13px}.dlitem .mh span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.dlitem .bar i.paused{background:var(--dim)}.dlitem .bar i.warn{background:var(--warn)}.dlitem .bar i.crit{background:var(--crit)}
+.dlwait{margin-bottom:12px;font-size:13px}#st_libs{margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+.sheetbody .row{gap:8px}.sheetbody .row button{padding:0 14px;min-height:42px;font-size:14px}#st_sheet_msg{font-size:12px;margin-top:8px}

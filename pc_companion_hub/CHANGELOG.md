@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.17.0
+Steam-Fernsteuerung, Teil 4 (braucht den Agenten mit Phase 9.4).
+- **Downloads & Speicher** (einklappbar im Tab „Spiele“): laufende, geladene und angehaltene Updates mit Fortschrittsbalken und Größe, die Zahl der Spiele, die auf ein Update warten, und je Steam-Bibliothek frei/gesamt und die Größe der Steam-Spiele darauf. Aktualisiert sich alle 10 s, solange der Bereich offen ist. Steam schreibt den Fortschritt nur gelegentlich auf die Platte, die Anzeige ist grob.
+- Detailansicht eines Spiels etwas kompakter (Knöpfe „Beenden“ und „Schließen“ stehen auf dem Handy nebeneinander).
+
 ## 0.16.0
 Steam-Fernsteuerung, Teil 1 (braucht den Agenten mit Phase 9.1; ältere Agenten zeigen den Tab nicht).
 - **Neuer Tab „Spiele“:** installierte Steam-Spiele als Kachelraster mit Cover (Cover bleiben im Browser zwischengespeichert), Suche, Sortierung nach „Zuletzt gespielt“, Name oder Größe, Hinweis-Schilder „Update“ und „Lädt 42 %“.

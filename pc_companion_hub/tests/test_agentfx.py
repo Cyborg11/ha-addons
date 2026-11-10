@@ -176,3 +176,11 @@ def test_steam_art_is_cacheable_and_supports_etag(client):
     assert r2.status_code == 304 and r2.content == b"" and r2.headers["etag"] == '"v1"'
     assert client.calls[-1]["params"] == {"w": "200"}
     assert client.get("/api/steam/status", headers=MASTER).headers["cache-control"] == "no-store"      # alles andere bleibt ungecacht
+
+
+def test_steam_downloads_is_readable_by_view_devices_and_relayed(client):
+    h = {"Authorization": "Bearer " + view_token(client)}
+    assert client.get("/api/steam/downloads", headers=h).status_code == 200
+    assert client.calls[-1]["path"] == "/api/steam/downloads" and client.calls[-1]["params"] is None
+    assert client.get("/api/steam/downloads").status_code == 401
+    assert client.get("/api/steam/downloads", headers=MASTER).headers["cache-control"] == "no-store"
