@@ -9,6 +9,8 @@ Zeigt die Live-Werte deines Gaming-PCs (vom [PC-Companion-Agenten](https://githu
 | `pcs` | **Liste der PCs** (empfohlen, auch für nur einen PC). Je Eintrag: `name` (z. B. „Gaming-PC“), `host` (IP oder Name, feste IP im Router empfohlen), `port` (Standard `8765`), `token` (aus der `config.yaml` des Agenten), `mac` (MAC-Adresse für Wake-on-LAN, `ipconfig /all`), optional `broadcast_ip` |
 | `agent_host`, `agent_port`, `agent_token`, `pc_mac` | Alte Einstellung für **einen** PC. Gilt nur, solange `pcs` leer ist. |
 | `broadcast_ip` | Broadcast-Adresse des Heimnetzes, z. B. `192.168.178.255` (Standard `255.255.255.255`) |
+| `wake_mode` | Wie der PC ausgeschaltet wird: `standby` (Energiesparmodus, Standard) oder `cold` (heruntergefahren, Kaltstart mit Autologin). Bestimmt Wartezeiten und Hinweise beim Aufwecken, siehe „Aufwecken und starten“. Je PC in `pcs` überschreibbar. |
+| `wake_timeout_s`, `launch_delay_s` | Optional: wie lange (Sekunden, 30–900) der Hub auf den Agenten wartet, und wie lange (0–180) er nach „online“ wartet, bevor er ein vorgemerktes Spiel startet. Standard je nach `wake_mode`. Je PC überschreibbar. |
 | `pin` | Kurze PIN für die Anmeldung am Handy, z. B. 6–8 Ziffern. Empfohlen. Nach 5 Fehlversuchen wird die Anmeldung gesperrt. |
 | `ui_token` | Langes Token als Notzugang (Anmeldefeld „Stattdessen Token eingeben“, ältere Geräte). Mindestens eines von `pin` und `ui_token` muss gesetzt sein, sonst lehnt der Hub alles ab. |
 | `public_url` | Optional: Adresse, unter der das Handy den Hub erreicht, z. B. `https://pi.<tailnet>.ts.net`. Wird für die QR-Kopplung vorgeschlagen, wenn du die Oberfläche über Home Assistant öffnest. |
@@ -113,3 +115,20 @@ Das Master-Dashboard aus ai-core lauscht laut `master.json` auf der Tailscale-Ad
 ## Wake-on-LAN-Checkliste
 
 BIOS „Wake on LAN“ aktivieren · Netzwerkadapter: „Nur Magic Packet“ · Windows-Schnellstart aus · LAN-Kabel · MAC notieren.
+
+## Aufwecken und starten (Steam)
+
+Ist der PC aus, zeigt die Offline-Seite unter dem Aufwecken-Knopf die zuletzt gespielten Spiele (die Liste merkt sich der Browser, sobald der Tab „Spiele“ einmal geöffnet war). Antippen weckt den PC und merkt das Spiel vor; sobald der Agent antwortet und Steam meldet, wartet der Hub kurz (`launch_delay_s`) und startet es. Auf der Warte-Seite steht „Startet danach: …“ mit Abbrechen, am Ende kommt eine Meldung (und ein Protokolleintrag). Schlägt der Start fehl oder meldet sich der PC nicht rechtzeitig, steht der Grund dort. Das setzt `mac` (Wake-on-LAN) voraus.
+
+Zwei Varianten, über `wake_mode` einstellbar (je PC):
+
+| | `standby` (Energiesparmodus) | `cold` (heruntergefahren) |
+|---|---|---|
+| Ausschalten | Knopf **Energiesparmodus** in „Steuerung“ (oder Energie-Plan-Modus „Energiesparmodus“, MQTT-Button) | Herunterfahren |
+| Danach | Sitzung, Agent und Steam laufen sofort weiter, Wecken dauert wenige Sekunden | Windows bootet, meldet sich an, startet Agent und Steam: 1–3 Minuten |
+| Standard-Zeiten | Wartezeit 120 s, Pause vor dem Start 5 s | Wartezeit 300 s, Pause 25 s |
+| Voraussetzung am PC | Netzwerkadapter darf den PC aufwecken („Gerät kann den Computer aus dem Ruhezustand aktivieren“ + „Nur Magic Packet“); Einstellungen → Konten → Anmeldeoptionen → „Wann soll Windows eine erneute Anmeldung verlangen?“ = **Nie** | **Automatische Anmeldung**, sonst läuft nach dem Start kein Agent |
+
+*Autologin einrichten:* Sysinternals **Autologon** (Passwort wird als LSA-Secret gespeichert; bei Microsoft-Konto E-Mail und Kontopasswort, nicht die Hello-PIN). Alternativ `netplwiz`; der Haken „Benutzer müssen Benutzernamen und Kennwort eingeben“ erscheint unter Windows 11 erst, wenn „Nur Windows Hello-Anmeldung zulassen“ aus ist. Kein Klartext-Passwort in der Registry. Wer das nicht möchte, kann die Sitzung nach der Anmeldung per Aufgabe sperren (Agent, Steam und Spiele laufen hinter dem Sperrbildschirm weiter).
+
+Wichtig: Der **Ruhezustand** (Knopf „Ruhezustand“, `shutdown /h`) ist etwas anderes als der Energiesparmodus. Wecken per Magic Packet aus dem Ruhezustand (S4) unterstützen nicht alle Mainboards und Netzwerkadapter; probiere es einmal aus. Läuft der PC nach dem Wecken, aber der Agent nicht (z. B. Neustart ohne Anmeldung), kann der Hub nichts starten und meldet das.

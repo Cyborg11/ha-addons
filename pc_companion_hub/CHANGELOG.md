@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.0
+Steam-Fernsteuerung, Teil 3: „Aufwecken und starten“ (braucht für den Energiesparmodus den Agenten mit Phase 9.3).
+- **Aufwecken und starten:** Ist der PC aus, zeigt die Offline-Seite die zuletzt gespielten Spiele. Antippen weckt den PC und startet das Spiel, sobald der Agent und Steam bereit sind. Die Warte-Seite zeigt „Startet danach: …“ mit Abbrechen, danach kommt eine Meldung über Erfolg oder den Grund des Scheiterns; alles steht im Protokoll.
+- **Zwei Varianten, einstellbar:** Option `wake_mode` (je PC überschreibbar): `standby` = Energiesparmodus (schnell, Standard) oder `cold` = Kaltstart nach Herunterfahren mit Autologin (längere Wartezeiten). Feinjustierung mit `wake_timeout_s` und `launch_delay_s`. Beschreibung beider Varianten in der Doku.
+- **Neuer Knopf „Energiesparmodus“** (Steuerung) und Energie-Plan-Modus „Energiesparmodus“, wenn der Agent ihn kann (Feature `standby`).
+- Die Warte-Seite passt Wartezeit und Hinweis an den Modus an.
+
 ## 0.17.0
 Steam-Fernsteuerung, Teil 4 (braucht den Agenten mit Phase 9.4).
 - **Downloads & Speicher** (einklappbar im Tab „Spiele“): laufende, geladene und angehaltene Updates mit Fortschrittsbalken und Größe, die Zahl der Spiele, die auf ein Update warten, und je Steam-Bibliothek frei/gesamt und die Größe der Steam-Spiele darauf. Aktualisiert sich alle 10 s, solange der Bereich offen ist. Steam schreibt den Fortschritt nur gelegentlich auf die Platte, die Anzeige ist grob.

@@ -30,7 +30,7 @@
 
   const row = (cls) => { const d = document.createElement("div"); d.className = cls; return d; };
   const mm = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? h + " Std. " + String(m).padStart(2, "0") + " Min." : m + " Min. " + String(s % 60).padStart(2, "0") + " s"; };
-  const MODE = { shutdown: "herunterfahren", sleep: "in den Ruhezustand" };
+  const MODE = { shutdown: "herunterfahren", sleep: "in den Ruhezustand", standby: "in den Energiesparmodus" };
 
   /* ---------------- Energie-Plan ---------------- */
   let mode = store.get("pcc_plan_mode") || "shutdown";
@@ -59,7 +59,9 @@
   function renderModeButtons() {
     const box = $("plan_mode");
     box.textContent = "";
-    for (const [k, label] of [["shutdown", "Herunterfahren"], ["sleep", "Ruhezustand"]]) {
+    const modes = [["shutdown", "Herunterfahren"], ["sleep", "Ruhezustand"]];
+    if (features.includes("standby")) modes.push(["standby", "Energiesparmodus"]);
+    for (const [k, label] of modes) {
       const b = document.createElement("button");
       b.className = "segbtn" + (k === mode ? " on" : "");
       b.textContent = label;
@@ -68,6 +70,7 @@
     }
   }
   renderModeButtons();
+  window.addEventListener("pcc:features", renderModeButtons);
   const timerBox = $("plan_timer");
   for (const [min, label] of [[30, "In 30 Min."], [60, "In 1 Std."], [120, "In 2 Std."], [240, "In 4 Std."]]) {
     const b = document.createElement("button");
