@@ -275,3 +275,4 @@ body.readonly #progpanel{display:none!important}
 .dropzone:hover,.dropzone:focus-visible,.dropzone.over{border-color:var(--ok);background:rgba(52,232,164,.07);color:var(--fg);outline:0}
 #up_recent_box h3{justify-content:space-between}
 #up_recent_box .linkbtn{padding:0;font-size:12px;text-transform:none;letter-spacing:0}
+.drivetemps{margin-top:12px;padding-top:8px;border-top:1px solid var(--line,rgba(128,128,128,.25))}.drivetemps h4{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--muted)}.drivetemps .mh span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.drivetemps b.lv-warn{color:var(--warn)}.drivetemps b.lv-crit{color:var(--crit)}
