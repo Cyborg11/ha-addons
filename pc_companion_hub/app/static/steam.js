@@ -47,7 +47,7 @@
   const badge = g => {
     if (running && running.appid === g.appid) return "Läuft";
     if (g.progress != null && g.state !== "paused") return "Lädt " + Math.round(g.progress * 100) + " %";
-    return STATE[g.state] || "";
+    return STATE[g.state] || (g.non_steam ? "Eigenes" : "");
   };
 
   /* ---- Raster ---- */
@@ -149,7 +149,7 @@
     $("st_sheet_name").textContent = g.name;
     const rows = [
       ["Zuletzt gespielt", g.last_played ? ago(Date.now() / 1000 - g.last_played) : "noch nie"],
-      ["Spielzeit", fmtH(g.playtime_min)], ["Größe", fmtGb(g.size_gb)],
+      ...(g.non_steam ? [["Quelle", "Eigene Verknüpfung (Nicht-Steam)"]] : [["Spielzeit", fmtH(g.playtime_min)], ["Größe", fmtGb(g.size_gb)]]),
       ["Status", isRun ? "Läuft " + runtime(running.since) : ({ installed: "Installiert", update_required: "Update verfügbar", updating: "Update läuft", downloading: "Wird geladen", paused: "Download pausiert", other: "–" })[g.state]],
     ];
     const box = $("st_sheet_meta");
@@ -272,6 +272,10 @@
   async function loadSuggestions(reset) {
     const my = ++artSeq, grid = $("st_art_grid");
     if (reset) { artPage = 0; artSel = 0; grid.textContent = ""; $("st_art_preview").hidden = true; $("st_art_more").hidden = true; }
+    if ((artGame() || {}).non_steam) {
+      artMsg("Für Nicht-Steam-Spiele gibt es keine Vorschläge von SteamGridDB. Eigene Bilder lassen sich im grid-Ordner von Steam ablegen.");
+      return;
+    }
     if (!features.includes("steam_griddb")) {
       artMsg("Für Vorschläge einen SteamGridDB-Schlüssel eintragen: steam.griddb_key in der config.yaml des Agenten (Schlüssel unter steamgriddb.com → Profil → Preferences → API).");
       return;
