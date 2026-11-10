@@ -302,6 +302,26 @@
     </div>
   </div>
 
+  <!-- ============ Spiele (Steam) ============ -->
+  <div class="view" data-view="steam" hidden>
+    <div class="panel steamnow" id="st_now" hidden>
+      <div class="stbg" id="st_now_bg"></div>
+      <div class="stinfo"><small>Läuft gerade</small><b id="st_now_name"></b><span id="st_now_time"></span></div>
+      <button id="st_now_stop" class="danger stctl">Beenden</button>
+    </div>
+    <div class="panel pad">
+      <h3>Spiele <small id="st_count" class="muted"></small></h3>
+      <div class="row">
+        <input id="st_q" type="search" placeholder="Suchen …" aria-label="Spiel suchen" autocomplete="off">
+        <select id="st_sort" aria-label="Sortierung"><option value="recent">Zuletzt gespielt</option><option value="name">Name</option><option value="size">Größe</option></select>
+        <button id="st_reload">Aktualisieren</button>
+      </div>
+      <div id="st_dl" class="hint" hidden></div>
+      <div id="st_grid" class="stgrid"></div>
+      <div id="st_msg" class="muted"></div>
+    </div>
+  </div>
+
   <div class="view" data-view="files" hidden>
     <div class="panel pad" id="upload">
       <h3>Datei senden <small id="up_limit" class="muted"></small></h3>
@@ -329,8 +349,25 @@
   <button data-tab="tools"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/></svg><span>KI-Tools</span></button>
   <button data-tab="ctrl"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Steuerung</span></button>
   <button data-tab="gallery" data-feature="gallery" hidden><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg><span>Galerie</span></button>
+  <button data-tab="steam" data-feature="steam" hidden><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10v5M5 12.5h5"/><circle cx="15.5" cy="11.5" r="1"/><circle cx="18" cy="14" r="1"/></svg><span>Spiele</span></button>
   <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><span>Dateien</span></button>
 </nav>
+
+<div id="st_sheet" class="sheet" hidden>
+  <div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="st_sheet_name">
+    <img id="st_sheet_img" class="sheetimg" alt="">
+    <div class="sheetbody">
+      <h3 id="st_sheet_name"></h3>
+      <div id="st_sheet_meta" class="sheetmeta"></div>
+      <div class="row">
+        <button id="st_launch" class="primary stctl">Starten</button>
+        <button id="st_stop" class="danger stctl" hidden>Beenden</button>
+        <button id="st_sheet_close">Schließen</button>
+      </div>
+      <div id="st_sheet_msg" class="muted"></div>
+    </div>
+  </div>
+</div>
 
 <div id="viewer" hidden>
   <div class="vbar"><span id="viewer_title"></span><span><span id="viewer_pos" class="muted"></span><button id="viewer_save" class="primary">Speichern</button><button id="viewer_close">Schließen</button></span></div>
@@ -349,5 +386,6 @@
 <script src="agentfx.js"></script>
 <script src="top5.js"></script>
 <script src="gallery.js"></script>
+<script src="steam.js"></script>
 </body>
 </html>

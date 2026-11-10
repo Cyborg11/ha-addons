@@ -206,15 +206,22 @@ class Hub:
         except Exception:
             return 502, b"", "text/plain"
 
+    async def agent_fetch(self, method: str, path: str, params: dict | None = None, body=None, timeout: float = 15.0,
+                          extra_headers: dict | None = None) -> tuple[int, bytes, str, dict]:
+        """Wie agent_request, liefert zusätzlich die Antwort-Header (ETag) und kann Header wie If-None-Match mitschicken."""
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                r = await client.request(method, f"{self.http_base}{path}", params=params, json=body,
+                                         headers={**self._agent_headers(), **(extra_headers or {})})
+            return r.status_code, r.content, r.headers.get("content-type", "application/octet-stream"), dict(r.headers)
+        except Exception as e:
+            return 502, json.dumps({"detail": f"Agent nicht erreichbar: {e.__class__.__name__}"}).encode(), "application/json", {}
+
     async def agent_request(self, method: str, path: str, params: dict | None = None, body=None,
                             timeout: float = 15.0) -> tuple[int, bytes, str]:
         """Reicht einen Aufruf an den Agenten durch (der Agent-Token bleibt im Hub). Gibt (Status, Inhalt, Content-Type) zurück."""
-        try:
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                r = await client.request(method, f"{self.http_base}{path}", params=params, json=body, headers=self._agent_headers())
-            return r.status_code, r.content, r.headers.get("content-type", "application/octet-stream")
-        except Exception as e:
-            return 502, json.dumps({"detail": f"Agent nicht erreichbar: {e.__class__.__name__}"}).encode(), "application/json"
+        code, content, ctype, _ = await self.agent_fetch(method, path, params, body, timeout)
+        return code, content, ctype
 
     def stop(self) -> None:
         if self._upstream:

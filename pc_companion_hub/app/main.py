@@ -37,6 +37,8 @@ SAFE_ID = re.compile(r"[A-Za-z0-9._:-]{1,80}")
 API_LOCK_AFTER = 20        # falsche Bearer-Token je Adresse, dann 15 Minuten Sperre
 API_GLOBAL_LIMIT = 300     # insgesamt pro Stunde
 GALLERY_PARAMS = ("folder", "name", "w", "limit", "offset", "download")
+STEAM_KINDS = ("cover", "header", "hero", "logo", "icon")
+STEAM_OPEN = {"bigpicture": "Big Picture", "downloads": "Downloads öffnen", "library": "Bibliothek öffnen", "exit": "Steam beendet"}
 
 
 def load_options() -> dict:
@@ -328,13 +330,18 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
 
     # ---- Zusatzfunktionen des Agenten (Phase 8): Aufrufe werden durchgereicht ----
     async def relay(request: Request, hub: Hub, method: str, path: str, *, params: dict | None = None, body=None,
-                    what: str | None = None, detail: str | None = None, timeout: float = 15.0) -> Response:
+                    what: str | None = None, detail: str | None = None, timeout: float = 15.0, cache: str | None = None) -> Response:
+        """cache: Cache-Control für Antworten, die der Browser behalten darf (Steam-Bilder); dann gehen ETag und If-None-Match durch."""
         if hub.status != "online":
             raise HTTPException(status_code=409, detail="PC ist nicht online")
-        code, content, ctype = await hub.agent_request(method, path, params, body, timeout)
+        inm = request.headers.get("if-none-match") if cache else None
+        code, content, ctype, rh = await hub.agent_fetch(method, path, params, body, timeout, {"If-None-Match": inm} if inm else None)
         if what:
             record(request, what, pc=hub.name or hub.pc_id, detail=detail, ok=code < 300)
-        return Response(content=content, status_code=code, media_type=ctype, headers={"Cache-Control": "no-store"})
+        headers = {"Cache-Control": cache if cache and code in (200, 304) else "no-store"}
+        if cache and code in (200, 304) and rh.get("etag"):
+            headers["ETag"] = rh["etag"]
+        return Response(content=content if code != 304 else b"", status_code=code, media_type=ctype, headers=headers)
 
     def take(request: Request, allowed: tuple[str, ...]) -> dict:
         return {k: v for k, v in request.query_params.items() if k in allowed}
@@ -393,6 +400,59 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     @app.get("/api/gallery/file", dependencies=[Depends(require_ui_token)])
     async def gallery_file(request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "GET", "/api/gallery/file", params=take(request, GALLERY_PARAMS), timeout=60.0)
+
+    # ---- Steam (Phase 9): Lesen mit Ansichtsrecht, alles Verändernde nur mit Schreibrecht und im Protokoll ----
+    async def steam_label(hub: Hub, appid: int) -> str:
+        if hub.status != "online":
+            return f"AppID {appid}"
+        code, content, _ = await hub.agent_request("GET", f"/api/steam/games/{appid}")
+        try:
+            return f"{json.loads(content)['name']} ({appid})" if code == 200 else f"AppID {appid}"
+        except (ValueError, KeyError, TypeError):
+            return f"AppID {appid}"
+
+    def steam_appid(appid: int) -> int:
+        if not 0 < appid < 2 ** 32:
+            raise HTTPException(status_code=400, detail="ungültige AppID")
+        return appid
+
+    @app.get("/api/steam/status", dependencies=[Depends(require_ui_token)])
+    async def steam_status(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/steam/status")
+
+    @app.get("/api/steam/games", dependencies=[Depends(require_ui_token)])
+    async def steam_games(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/steam/games", params=take(request, ("sort", "q")))
+
+    @app.get("/api/steam/games/{appid}", dependencies=[Depends(require_ui_token)])
+    async def steam_game(appid: int, request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", f"/api/steam/games/{steam_appid(appid)}")
+
+    @app.get("/api/steam/art/{appid}/{kind}", dependencies=[Depends(require_ui_token)])
+    async def steam_art(appid: int, kind: str, request: Request, hub: Hub = Depends(get_hub)):
+        if kind not in STEAM_KINDS:
+            raise HTTPException(status_code=400, detail="ungültige Bildart")
+        return await relay(request, hub, "GET", f"/api/steam/art/{steam_appid(appid)}/{kind}", params=take(request, ("w",)),
+                           timeout=20.0, cache="private, max-age=86400")
+
+    @app.post("/api/steam/games/{appid}/launch", dependencies=[Depends(require_write)])
+    async def steam_launch(appid: int, request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
+        steam_appid(appid)
+        force = bool((body or {}).get("force"))
+        return await relay(request, hub, "POST", f"/api/steam/games/{appid}/launch", body={"force": force},
+                           what="Spiel gestartet", detail=await steam_label(hub, appid), timeout=20.0)
+
+    @app.post("/api/steam/games/{appid}/stop", dependencies=[Depends(require_write)])
+    async def steam_stop(appid: int, request: Request, hub: Hub = Depends(get_hub)):
+        steam_appid(appid)
+        return await relay(request, hub, "POST", f"/api/steam/games/{appid}/stop", what="Spiel beendet",
+                           detail=await steam_label(hub, appid), timeout=25.0)
+
+    @app.post("/api/steam/open/{what}", dependencies=[Depends(require_write)])
+    async def steam_open(what: str, request: Request, hub: Hub = Depends(get_hub)):
+        if what not in STEAM_OPEN:
+            raise HTTPException(status_code=400, detail="unbekannte Steam-Aktion")
+        return await relay(request, hub, "POST", f"/api/steam/open/{what}", what="Steam: " + STEAM_OPEN[what])
 
     @app.get("/api/screenshot", dependencies=[Depends(require_write)])
     async def screenshot(request: Request, hub: Hub = Depends(get_hub)):

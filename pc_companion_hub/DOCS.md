@@ -22,11 +22,12 @@ Mit einem Agenten ab Phase 8 (PCCompanion, `GET /health` meldet `features`) ersc
 | Energie-Plan, Prozesse, Zwischenablage senden, Bildschirm aus | keine |
 | Programme | `programs:` mit den erlaubten Programmen |
 | Galerie | `gallery.folders:` mit Ausgabeordnern; Vorschaubilder brauchen `Pillow` |
+| Spiele (Steam) | wird automatisch erkannt (Steam installiert); Einstellungen unter `steam:` in der `config.yaml` des Agenten |
 | Screenshot | `Pillow` |
 | Zwischenablage vom PC holen | `clipboard.allow_read: true` |
 | Job-Abbruch | die Tools (SIG, MediaAI) über `ai-core` mit `aicore.pcc` |
 
-Nur-Ansicht-Geräte sehen davon nur die Galerie, den Job-Verlauf und den Energie-Plan (lesend); alles andere verlangt Vollzugriff.
+Nur-Ansicht-Geräte sehen davon nur die Galerie, die Spiele-Bibliothek, den Job-Verlauf und den Energie-Plan (lesend); alles andere verlangt Vollzugriff.
 
 ## Benachrichtigungen
 
@@ -72,7 +73,7 @@ Bei mehreren PCs zeigt die Leiste oben je PC einen Knopf mit Statuspunkt, dazu �
 Die Oberfläche liegt auf Port **8099**: `http://<pi-ip>:8099/`. Beim ersten Öffnen die `pin` eingeben (oder das `ui_token`). Das Add-on läuft mit `host_network`, damit das Wake-on-LAN-Paket ins LAN gelangt; der Port lässt sich daher nicht umlegen.
 
 Zustände: **online** (Live-Daten), **offline** (Knopf „PC aufwecken“, zuletzt gesehen, letzte Werte, Verlauf), **startet** (Balken und Countdown bis 120 s).
-Reiter: **Dashboard**, **KI-Tools** (Web-Oberflächen aus `tools`, Programme des Agenten, Job-Verlauf), **Steuerung** (Unterreiter Steuern · Werkzeuge · Geräte & Protokoll), **Galerie** und **Dateien**.
+Reiter: **Dashboard**, **KI-Tools** (Web-Oberflächen aus `tools`, Programme des Agenten, Job-Verlauf), **Steuerung** (Unterreiter Steuern · Werkzeuge · Geräte & Protokoll), **Galerie**, **Spiele** (nur wenn der Agent Steam findet) und **Dateien**.
 Das Sonnen-Symbol hält den Bildschirm an (Wake Lock) – für ein altes Handy als Dauer-Display im Querformat.
 
 ## Anmeldung am Handy

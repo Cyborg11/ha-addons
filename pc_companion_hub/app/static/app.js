@@ -20,7 +20,7 @@ function show(view) {
 }
 
 function showTab(name) {
-  tab = (role === "view" ? ["dash", "tools", "gallery"] : ["dash", "tools", "ctrl", "files", "gallery"]).includes(name) ? name : "dash";
+  tab = (role === "view" ? ["dash", "tools", "gallery", "steam"] : ["dash", "tools", "ctrl", "files", "gallery", "steam"]).includes(name) ? name : "dash";
   store.set("pcc_tab", tab);
   document.querySelectorAll(".view").forEach(v => { v.hidden = v.dataset.view !== tab; });
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
@@ -295,7 +295,7 @@ function setFeatures(list) {
   document.querySelectorAll("[data-feature]").forEach(el => { el.hidden = !features.includes(el.dataset.feature); });
   const toolsSub = document.querySelector('#subnav [data-sub="tools"]');       // „Werkzeuge“ nur, wenn der Agent Prozesse oder Zwischenablage kann
   if (toolsSub) { toolsSub.hidden = !(features.includes("processes") || features.includes("clipboard")); showSub(sub); }
-  if (tab === "gallery" && !features.includes("gallery")) showTab("dash");
+  if ((tab === "gallery" || tab === "steam") && !features.includes(tab)) showTab("dash");
   window.dispatchEvent(new CustomEvent("pcc:features"));
 }
 
