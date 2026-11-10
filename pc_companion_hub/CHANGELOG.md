@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.20.1
+- **Fix:** Ein getauschtes Cover (Bilder ändern, zurücksetzen) erscheint sofort in der Spiele-Liste und im Detailblatt. Bisher hielt der Browser das alte Bild bis zu 24 Stunden fest, weil die Bildadresse keine Version trug.
+
 ## 0.20.0
 Steam-Fernsteuerung, Teil 5: Nicht-Steam-Spiele (braucht den Agenten mit Phase 9.5).
 - Eigene Verknüpfungen aus Steam („Nicht-Steam-Spiel hinzufügen“) erscheinen im Tab „Spiele“ (Schild „Eigenes“) und lassen sich starten und, sofern sie ein eigenes Programm sind, beenden. Shells und Skript-Interpreter lassen sich bewusst nicht gezielt beenden.
