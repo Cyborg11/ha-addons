@@ -220,3 +220,14 @@ def test_steam_griddb_reads_are_open_to_view_devices_and_thumbs_are_cacheable(cl
     assert client.get("/api/steam/griddb/730/bogus", headers=h).status_code == 400
     assert client.get("/api/steam/griddb/thumb/0", headers=h).status_code == 400
     assert client.get("/api/steam/griddb/730/cover").status_code == 401 and client.get("/api/steam/griddb/thumb/1").status_code == 401
+
+
+def test_steam_griddb_nsfw_parameter_is_validated_and_passed_on(client):
+    assert client.get("/api/steam/griddb/730/cover?nsfw=true&page=1", headers=MASTER).status_code == 200
+    assert client.calls[-1]["params"] == {"nsfw": "true", "page": "1"}
+    assert client.get("/api/steam/griddb/730/cover?nsfw=false", headers=MASTER).status_code == 200
+    assert client.calls[-1]["params"] == {"nsfw": "false"}
+    n = len(client.calls)
+    for bad in ("any", "1", "yes", "x"):
+        assert client.get("/api/steam/griddb/730/cover?nsfw=" + bad, headers=MASTER).status_code == 400
+    assert len(client.calls) == n

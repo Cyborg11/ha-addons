@@ -5,6 +5,7 @@ Steam-Fernsteuerung, Teil 2: Bilder ändern (braucht den Agenten mit Phase 9.2; 
 - **Bilder ändern** in der Detailansicht eines Spiels: Reiter Cover, Header, Hero und Logo, Vorschläge von SteamGridDB als Raster (mit „Mehr laden“), Antippen zeigt eine Vorschau, „Übernehmen“ speichert das Bild beim Spiel auf dem PC. „Auf Standard zurücksetzen“ entfernt das eigene Bild (geht auch ohne Schlüssel).
 - Der Hub lädt nie Bilder von außen: Vorschauen und das gewählte Bild holt der Agent (nur von steamgriddb.com) und der Hub reicht sie durch; Vorschauen bleiben im Browser eine Stunde gecacht.
 - Hinweis, dass Steam neue eigene Bilder meist erst nach einem Neustart des Clients zeigt, mit Knopf „Steam jetzt beenden“ (mit Rückfrage).
+- **NSFW-Bilder** lassen sich mit dem Schalter „Auch NSFW-Bilder anzeigen“ zusätzlich einblenden (Standard: aus, wird pro Gerät gemerkt); sie tragen ein rotes Schild „NSFW“.
 - Ohne Schlüssel zeigt die Oberfläche statt der Vorschläge eine Anleitung zum Eintragen. Alle Änderungen stehen im Protokoll („Cover geändert“, „Cover zurückgesetzt“).
 
 ## 0.18.0

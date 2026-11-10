@@ -335,3 +335,5 @@ body.readonly .offgames{display:none!important}
 #st_art_more{margin-top:12px;width:100%}.artfoot{margin-top:14px;flex-wrap:wrap}#st_art_msg{margin-top:10px;font-size:13px}
 #st_art_close,#st_art_reset,#st_art_more,#st_art_cancel,#st_art_open{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
 #st_art_note{margin-top:10px}#st_art_note .linkbtn{display:inline;padding:0}
+.chk{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--dim);cursor:pointer}.chk input{width:auto;min-height:0;accent-color:var(--ok)}
+.stbadge.nsfw{left:auto;right:6px;color:var(--crit);border-color:rgba(255,93,108,.45)}

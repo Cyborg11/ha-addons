@@ -460,7 +460,10 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     async def steam_griddb(appid: int, kind: str, request: Request, hub: Hub = Depends(get_hub)):
         if kind not in STEAM_KINDS:
             raise HTTPException(status_code=400, detail="ungültige Bildart")
-        return await relay(request, hub, "GET", f"/api/steam/griddb/{steam_appid(appid)}/{kind}", params=take(request, ("page",)), timeout=25.0)
+        params = take(request, ("page", "nsfw"))
+        if params.get("nsfw") not in (None, "true", "false"):
+            raise HTTPException(status_code=400, detail="nsfw muss true oder false sein")
+        return await relay(request, hub, "GET", f"/api/steam/griddb/{steam_appid(appid)}/{kind}", params=params, timeout=25.0)
 
     @app.put("/api/steam/art/{appid}/{kind}", dependencies=[Depends(require_write)])
     async def steam_art_set(appid: int, kind: str, request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):

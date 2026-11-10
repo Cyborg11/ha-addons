@@ -245,11 +245,13 @@
   const ART_KINDS = [["cover", "Cover", "2/3"], ["header", "Header", "920/430"], ["hero", "Hero", "96/31"], ["logo", "Logo", "16/9"]];
   let artApp = 0, artKind = "cover", artPage = 0, artSel = 0, artSeq = 0;
   const artThumbs = new Map();
+  let artNsfw = store.get("pcc_steam_nsfw") === "1";                 // wird pro Gerät gemerkt, Standard: aus
   const artGame = () => games.find(g => g.appid === artApp);
 
   function openArt(appid) {
     artApp = appid; artKind = "cover";
     $("st_art").hidden = false; $("st_art_note").hidden = true;
+    $("st_art_nsfw").checked = artNsfw;
     $("st_art_title").textContent = "Bilder ändern – " + (artGame() || {}).name;
     paintArtTabs(); loadSuggestions(true);
   }
@@ -276,7 +278,7 @@
     }
     artMsg("Lade Vorschläge …");
     try {
-      const d = await call("GET", "api/steam/griddb/" + artApp + "/" + artKind + "?page=" + artPage);
+      const d = await call("GET", "api/steam/griddb/" + artApp + "/" + artKind + "?page=" + artPage + (artNsfw ? "&nsfw=true" : ""));
       if (my !== artSeq) return;
       const ratio = (ART_KINDS.find(x => x[0] === artKind) || [])[2] || "2/3";
       grid.classList.toggle("wide", artKind === "header" || artKind === "hero" || artKind === "logo");
@@ -285,6 +287,7 @@
         b.className = "sttile arttile"; b.dataset.id = it.id;
         const frame = document.createElement("div"), img = document.createElement("img"), cap = document.createElement("span");
         frame.className = "stcover"; frame.style.aspectRatio = ratio; img.alt = "";
+        if (it.nsfw) { const nb = document.createElement("span"); nb.className = "stbadge nsfw"; nb.textContent = "NSFW"; frame.append(nb); }
         cap.className = "gcap"; cap.textContent = [it.width && it.height ? it.width + "×" + it.height : "", it.style || ""].filter(Boolean).join(" · ");
         frame.append(img); b.append(frame, cap);
         b.onclick = () => selectArt(it, b);
@@ -334,6 +337,7 @@
     catch (e) { artMsg(e.message); }
   };
   $("st_art_more").onclick = () => loadSuggestions(false);
+  $("st_art_nsfw").onchange = () => { artNsfw = $("st_art_nsfw").checked; store.set("pcc_steam_nsfw", artNsfw ? "1" : "0"); loadSuggestions(true); };
   $("st_art_close").onclick = closeArt;
   $("st_art").addEventListener("click", e => { if (e.target === $("st_art")) closeArt(); });
   $("st_art_exit").onclick = async () => {
