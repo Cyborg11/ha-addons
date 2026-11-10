@@ -24,9 +24,22 @@ def client(tmp_path):
                 calls.append({"pc": pid, "method": method, "path": path, "params": params, "body": body})
                 if path.endswith("/thumb") or path.endswith("/screenshot"):
                     return 200, b"\xff\xd8\xffJPEGDATA", "image/jpeg"
+                if "/api/steam/games/" in path and path.count("/") == 4 and not path.endswith("/launch"):
+                    return 200, json.dumps({"appid": 730, "name": "Counter-Strike 2"}).encode(), "application/json"
                 return 200, json.dumps({"ok": True}).encode(), "application/json"
 
             hub.agent_request = fake
+
+            async def fetch(method, path, params=None, body=None, timeout=15.0, extra_headers=None, pid=pid, fake=fake):
+                if "/api/steam/art/" in path:
+                    calls.append({"pc": pid, "method": method, "path": path, "params": params, "extra": extra_headers})
+                    if (extra_headers or {}).get("If-None-Match") == '"v1"':
+                        return 304, b"", "image/jpeg", {"etag": '"v1"'}
+                    return 200, b"\xff\xd8\xffCOVER", "image/jpeg", {"etag": '"v1"'}
+                code, content, ctype = await fake(method, path, params, body, timeout)
+                return code, content, ctype, {}
+
+            hub.agent_fetch = fetch
 
             async def fake_action(name, body, pid=pid):
                 calls.append({"pc": pid, "action": name, "body": body})
@@ -119,3 +132,47 @@ def test_features_come_from_the_agent_health(client):
 def test_new_actions_are_allowed(client):
     assert client.post("/api/action/monitor_off", headers=MASTER).status_code == 200
     assert client.post("/api/action/clipboard_set", headers=MASTER, json={"text": "x"}).status_code == 200
+
+
+# ---- Steam (Phase 9.1) ----
+def test_steam_reads_are_open_to_view_devices_but_control_is_not(client):
+    h = {"Authorization": "Bearer " + view_token(client)}
+    for path in ("/api/steam/status", "/api/steam/games?sort=name&q=x", "/api/steam/games/730", "/api/steam/art/730/cover?w=200"):
+        assert client.get(path, headers=h).status_code == 200, path
+    n = len(client.calls)
+    for path in ("/api/steam/games/730/launch", "/api/steam/games/730/stop", "/api/steam/open/exit"):
+        assert client.post(path, headers=h).status_code == 403, path
+    assert len(client.calls) == n
+    assert client.get("/api/steam/games").status_code == 401 and client.post("/api/steam/games/730/launch").status_code == 401
+
+
+def test_steam_relay_passes_only_known_parameters_and_validates_input(client):
+    client.get("/api/steam/games?sort=name&q=fort&evil=1&pc=ki-pc", headers=MASTER)
+    assert client.calls[-1]["pc"] == "ki-pc" and client.calls[-1]["params"] == {"sort": "name", "q": "fort"}
+    n = len(client.calls)
+    assert client.get("/api/steam/art/730/bogus", headers=MASTER).status_code == 400
+    assert client.get("/api/steam/art/0/cover", headers=MASTER).status_code == 400
+    assert client.post("/api/steam/games/0/launch", headers=MASTER).status_code == 400
+    assert client.post("/api/steam/games/99999999999/launch", headers=MASTER).status_code == 400
+    assert client.post("/api/steam/open/format-c", headers=MASTER).status_code == 400
+    assert len(client.calls) == n                                                                # nichts davon erreichte den Agenten
+
+
+def test_steam_launch_is_logged_with_name_and_forwards_force(client):
+    assert client.post("/api/steam/games/730/launch?pc=ki-pc", headers=MASTER, json={"force": True, "evil": 1}).status_code == 200
+    last = client.calls[-1]
+    assert last["path"] == "/api/steam/games/730/launch" and last["body"] == {"force": True}
+    client.post("/api/steam/games/730/stop", headers=MASTER)
+    client.post("/api/steam/open/bigpicture", headers=MASTER)
+    raw = json.dumps(client.get("/api/audit", headers=MASTER).json(), ensure_ascii=False)
+    for text in ("Spiel gestartet", "Spiel beendet", "Counter-Strike 2 (730)", "Steam: Big Picture"):
+        assert text in raw, text
+
+
+def test_steam_art_is_cacheable_and_supports_etag(client):
+    r = client.get("/api/steam/art/730/cover?w=200", headers=MASTER)
+    assert r.headers["cache-control"] == "private, max-age=86400" and r.headers["etag"] == '"v1"' and r.content.startswith(b"\xff\xd8\xff")
+    r2 = client.get("/api/steam/art/730/cover?w=200", headers={**MASTER, "If-None-Match": '"v1"'})
+    assert r2.status_code == 304 and r2.content == b"" and r2.headers["etag"] == '"v1"'
+    assert client.calls[-1]["params"] == {"w": "200"}
+    assert client.get("/api/steam/status", headers=MASTER).headers["cache-control"] == "no-store"      # alles andere bleibt ungecacht

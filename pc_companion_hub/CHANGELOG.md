@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.0
+Steam-Fernsteuerung, Teil 1 (braucht den Agenten mit Phase 9.1; ältere Agenten zeigen den Tab nicht).
+- **Neuer Tab „Spiele“:** installierte Steam-Spiele als Kachelraster mit Cover (Cover bleiben im Browser zwischengespeichert), Suche, Sortierung nach „Zuletzt gespielt“, Name oder Größe, Hinweis-Schilder „Update“ und „Lädt 42 %“.
+- **Läuft gerade:** Karte mit Spielname und Laufzeit (live), Knopf „Beenden“ mit Rückfrage.
+- **Detailansicht:** Antippen zeigt Cover, Spielzeit, zuletzt gespielt, Größe und Status; „Starten“ und „Beenden“. Läuft schon ein anderes Spiel, fragt die Oberfläche vor dem Start nach.
+- Nur-Ansicht-Geräte sehen Raster und Details, aber keine Knöpfe. Starten und Beenden stehen im Protokoll (mit Spielname).
+- Hub-Relays unter `/api/steam/...`; Steam-Bilder dürfen 24 Stunden gecacht werden (ETag).
+
 ## 0.15.0
 Mehr Messwerte aus LibreHardwareMonitor (braucht den neuen Agenten und `lhm.enabled: true`).
 - **CPU:** Leistungsaufnahme in W.
