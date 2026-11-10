@@ -420,6 +420,10 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     async def steam_status(request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "GET", "/api/steam/status")
 
+    @app.get("/api/steam/downloads", dependencies=[Depends(require_ui_token)])
+    async def steam_downloads(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/steam/downloads")
+
     @app.get("/api/steam/games", dependencies=[Depends(require_ui_token)])
     async def steam_games(request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "GET", "/api/steam/games", params=take(request, ("sort", "q")))

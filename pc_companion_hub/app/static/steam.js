@@ -187,6 +187,59 @@
   $("st_launch").onclick = () => { const g = games.find(x => x.appid === openId); if (g) launch(g.appid, g.name, false); };
   $("st_stop").onclick = () => { const g = games.find(x => x.appid === openId); if (g) stopGame(g.appid, g.name); };
 
+  /* ---- Downloads & Speicher ---- */
+  const dlbox = $("st_dlbox");
+  let dlTimer = 0;
+  const fmtBytes = b => b == null ? "" : b >= 1e9 ? (b / 1e9).toFixed(1).replace(".", ",") + " GB" : Math.max(1, Math.round(b / 1e6)) + " MB";
+  const fmtTb = g => g == null ? "–" : g >= 1000 ? (g / 1000).toFixed(2).replace(".", ",") + " TB" : Math.round(g) + " GB";
+  function bar(frac, lv) {
+    const b = document.createElement("div"), i = document.createElement("i");
+    b.className = "bar"; i.style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + "%";
+    if (lv) i.className = lv;
+    b.append(i); return b;
+  }
+  function row(left, right) {
+    const d = document.createElement("div"), a = document.createElement("span"), b = document.createElement("b");
+    d.className = "mh"; a.textContent = left; b.textContent = right; d.append(a, b); return d;
+  }
+  async function loadDownloads() {
+    try {
+      const [dl, st] = await Promise.all([call("GET", "api/steam/downloads"), call("GET", "api/steam/status")]);
+      const list = $("st_dl_list"), libs = $("st_libs");
+      list.textContent = ""; libs.textContent = "";
+      const names = { updating: "Update läuft", downloading: "Wird geladen", paused: "Pausiert" };
+      for (const it of dl.items) {
+        const box = document.createElement("div");
+        box.className = "dlitem";
+        const pct = it.progress == null ? "" : Math.round(it.progress * 100) + " %";
+        box.append(row(it.name, pct || names[it.state]));
+        if (it.progress != null) box.append(bar(it.progress, it.state === "paused" ? "paused" : ""));
+        const sub = document.createElement("small");
+        sub.className = "muted";
+        sub.textContent = names[it.state] + (it.bytes_total ? " · " + fmtBytes(it.bytes_done) + " von " + fmtBytes(it.bytes_total) : "");
+        box.append(sub); list.append(box);
+      }
+      if (!dl.items.length) { const p = document.createElement("div"); p.className = "muted"; p.textContent = "Es lädt gerade nichts."; list.append(p); }
+      if (dl.update_required) { const p = document.createElement("div"); p.className = "muted dlwait"; p.textContent = dl.update_required + (dl.update_required === 1 ? " Spiel wartet" : " Spiele warten") + " auf ein Update (Steam startet es, sobald es dran ist)."; list.append(p); }
+      for (const l of st.libraries || []) {
+        const box = document.createElement("div");
+        box.className = "dlitem";
+        const used = l.total_gb ? 1 - (l.free_gb || 0) / l.total_gb : 0;
+        box.append(row(l.name, l.free_gb == null ? "–" : fmtTb(l.free_gb) + " frei von " + fmtTb(l.total_gb)));
+        box.append(bar(used, used > 0.95 ? "crit" : used > 0.85 ? "warn" : ""));
+        const sub = document.createElement("small");
+        sub.className = "muted"; sub.textContent = "Steam-Spiele hier: " + fmtTb(l.games_gb);
+        box.append(sub); libs.append(box);
+      }
+      $("st_dl_sum").textContent = dl.items.length ? dl.items.length + " aktiv" : "";
+    } catch (e) { $("st_dl_list").textContent = e.message; }
+  }
+  function dlWatch() {
+    clearInterval(dlTimer); dlTimer = 0;
+    if (dlbox.open && !view.hidden) { loadDownloads(); dlTimer = setInterval(() => { if (!document.hidden) loadDownloads(); }, 10000); }
+  }
+  dlbox.addEventListener("toggle", dlWatch);
+
   /* ---- Steuerleiste ---- */
   $("st_sort").value = cmp[sort] ? sort : "recent";
   $("st_sort").onchange = () => { sort = $("st_sort").value; store.set("pcc_steam_sort", sort); paintGrid(); };
@@ -205,4 +258,5 @@
     if (loadedPc !== current || Date.now() - loadedAt > REFRESH_MS) { await load(true); }
     paintGrid(); paintNow();
   }).observe(view, { attributes: true, attributeFilter: ["hidden"] });
+  new MutationObserver(dlWatch).observe(view, { attributes: true, attributeFilter: ["hidden"] });
 })();
