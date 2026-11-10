@@ -96,14 +96,14 @@
         <canvas id="g_gpu"></canvas>
         <div class="legend"><span class="k gpu">Last</span><span class="k temp">Temperatur</span><span class="muted">letzte 2 min</span></div>
         <div class="meter"><div class="mh"><span>Leistung</span><b id="t_power">–</b></div><div class="bar"><i id="bar_power"></i></div></div>
-        <div class="kv"><div><span>Takt</span><b id="gpu_clock">–</b></div><div><span>Lüfter</span><b id="gpu_fan">–</b></div></div>
+        <div class="kv"><div><span>Takt</span><b id="gpu_clock">–</b></div><div><span>Lüfter</span><b id="gpu_fan">–</b></div><div id="gpu_mem_box" hidden><span>Speicher</span><b id="gpu_mem_temp">–</b></div></div>
       </article>
 
       <article class="panel card c-cpu">
         <h3><i class="dot cpu"></i>CPU</h3>
         <div class="big"><b id="cpu_val">–</b><small>%</small></div>
         <canvas id="g_cpu"></canvas>
-        <div class="kv"><div><span>Takt</span><b id="cpu_freq">–</b></div><div><span>Temperatur</span><b id="cpu_temp">–</b></div></div>
+        <div class="kv"><div><span>Takt</span><b id="cpu_freq">–</b></div><div><span>Temperatur</span><b id="cpu_temp">–</b></div><div id="cpu_pw_box" hidden><span>Leistung</span><b id="cpu_power">–</b></div></div>
         <div class="cores" id="cores" aria-label="Kernauslastung"></div>
       </article>
 
@@ -112,6 +112,7 @@
         <div class="big"><b id="ram_val">–</b><small id="ram_of"></small></div>
         <canvas id="g_ram"></canvas>
         <div class="bar"><i id="bar_ram"></i></div>
+        <div class="kv" id="ram_temp_box" hidden><div><span>Temperatur (Module)</span><b id="ram_temp">–</b></div></div>
       </article>
 
       <article class="panel card c-net">
@@ -123,6 +124,7 @@
       <article class="panel card c-disk">
         <h3><i class="dot disk"></i>Laufwerke</h3>
         <div id="disks"></div>
+        <div id="drive_temps" class="drivetemps" hidden></div>
       </article>
 
       <details class="panel card c-top" id="top_box" data-feature="top5" hidden>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0
+Mehr Messwerte aus LibreHardwareMonitor (braucht den neuen Agenten und `lhm.enabled: true`).
+- **CPU:** Leistungsaufnahme in W.
+- **GPU:** Lüfterdrehzahl (U/min) und Speichertemperatur.
+- **RAM:** Temperatur der Module.
+- **Laufwerke:** Temperatur je Festplatte/SSD. Felder, die die Hardware nicht meldet, bleiben ausgeblendet.
+
 ## 0.14.0
 Überarbeitete Oberfläche nach einem Rundgang als Nutzer.
 - **Steuerung in Unterreitern:** „Steuern“ (Energie, Medien, Agent, Energie-Plan, Link), „Werkzeuge“ (Prozesse, Zwischenablage), „Geräte & Protokoll“. Der Reiter merkt sich die Auswahl; „Werkzeuge“ erscheint nur, wenn der Agent Prozesse oder Zwischenablage kann.

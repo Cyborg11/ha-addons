@@ -157,7 +157,24 @@ function render(s) {
   $("t_power").textContent = n(g.power_w, " W") + (g.power_limit_w ? " / " + g.power_limit_w + " W" : "");
   setBar("bar_power", pf, level(pf * 100, 85, 98));
   $("gpu_clock").textContent = n(g.clock_mhz, " MHz");
-  $("gpu_fan").textContent = n(g.fan_pct, " %");
+  const sn = s.sensors || {};
+  $("gpu_fan").textContent = n(g.fan_pct, " %") + (sn.gpu_fan_rpm ? " · " + sn.gpu_fan_rpm + " U/min" : "");
+  $("gpu_mem_box").hidden = sn.gpu_mem_temp_c == null;
+  $("gpu_mem_temp").textContent = n(sn.gpu_mem_temp_c, " °C");
+  $("cpu_pw_box").hidden = sn.cpu_power_w == null;
+  $("cpu_power").textContent = n(sn.cpu_power_w, " W");
+  $("ram_temp_box").hidden = sn.ram_temp_c == null;
+  $("ram_temp").textContent = n(sn.ram_temp_c, " °C");
+  const dt = $("drive_temps"), dr = sn.drives || [];
+  dt.hidden = !dr.length;
+  if (dr.length) {
+    dt.replaceChildren(Object.assign(document.createElement("h4"), { textContent: "Temperatur" }));
+    for (const d of dr) {
+      const row = document.createElement("div"), nm = document.createElement("span"), val = document.createElement("b");
+      row.className = "mh"; nm.textContent = d.name; val.textContent = n(d.temp_c, " °C"); val.className = "lv-" + level(d.temp_c, 50, 60);
+      row.append(nm, val); dt.append(row);
+    }
+  }
 
   $("cpu_val").textContent = n(c.util_pct != null ? Math.round(c.util_pct) : null);
   $("cpu_freq").textContent = c.freq_mhz != null ? (c.freq_mhz / 1000).toFixed(2) + " GHz" : "–";
