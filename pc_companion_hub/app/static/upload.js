@@ -37,9 +37,35 @@
     };
   }
 
+  /* ---- Zuletzt gesendet (nur in diesem Browser gemerkt) ---- */
+  const RECENT_KEY = "pcc_recent_uploads";
+  const recent = () => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch (e) { return []; } };
+  function remember(entry) {
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify([entry, ...recent()].slice(0, 20))); } catch (e) { /* ohne Speicher */ }
+    paintRecent();
+  }
+  function paintRecent() {
+    const list = recent(), box = $("up_recent");
+    $("up_recent_box").hidden = !list.length;
+    box.textContent = "";
+    for (const e of list) {
+      const el = document.createElement("div");
+      el.className = "devrow" + (e.ok ? "" : " bad");
+      const info = document.createElement("div"), b = document.createElement("b"), sm = document.createElement("small");
+      b.textContent = (e.ok ? "✓ " : "✗ ") + e.name;
+      sm.className = "muted";
+      sm.textContent = new Date(e.t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + " · " + (e.target || "Standard") + (e.msg ? " · " + e.msg : "");
+      info.append(b, document.createElement("br"), sm);
+      el.append(info);
+      box.append(el);
+    }
+  }
+  $("up_clear").onclick = () => { try { localStorage.removeItem(RECENT_KEY); } catch (e) { /* egal */ } paintRecent(); };
+
   function send(blob, name, target) {
     return new Promise(resolve => {
       const r = row(name), x = new XMLHttpRequest();
+      const finish = (ok, msg) => { remember({ name, target, ok, msg, t: Date.now() }); resolve(ok); };
       let url = pcq("api/upload?filename=" + encodeURIComponent(name));
       if (target) url += "&target=" + encodeURIComponent(target);
       x.open("POST", url);
@@ -49,10 +75,10 @@
       x.onload = () => {
         let d = {};
         try { d = JSON.parse(x.responseText); } catch (e) {}
-        if (x.status === 200) { r.done(d.filename || name); resolve(true); }
-        else { r.fail(d.detail || "Fehler " + x.status); resolve(false); }
+        if (x.status === 200) { r.done(d.filename || name); finish(true, ""); }
+        else { r.fail(d.detail || "Fehler " + x.status); finish(false, d.detail || "Fehler " + x.status); }
       };
-      x.onerror = () => { r.fail("Verbindung abgebrochen"); resolve(false); };
+      x.onerror = () => { r.fail("Verbindung abgebrochen"); finish(false, "Verbindung abgebrochen"); };
       x.send(blob);
     });
   }
@@ -62,14 +88,23 @@
     for (const f of files) await send(f, f.name, target);
   }
 
-  $("up_pick").onclick = () => $("up_files").click();
-  $("up_files").onchange = async e => {
-    const files = Array.from(e.target.files);
-    e.target.value = "";
+  async function take(files) {
+    if (!files.length) return;
     if (status !== "online") { $("up_msg").textContent = "PC ist nicht online."; return; }
     $("up_msg").textContent = "";
     await sendAll(files);
-  };
+  }
+  $("up_pick").onclick = () => $("up_files").click();
+  $("up_files").onchange = async e => { const files = Array.from(e.target.files); e.target.value = ""; await take(files); };
+
+  /* ---- Ablagefläche (Ziehen und Ablegen am PC/Tablet, Antippen am Handy) ---- */
+  const drop = $("up_drop");
+  drop.onclick = () => $("up_files").click();
+  drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("up_files").click(); } };
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => take(Array.from((e.dataTransfer && e.dataTransfer.files) || [])));
+  paintRecent();
 
   // --- Android-Teilen-Ziel: der Service Worker legt geteilte Dateien im Cache ab ---
   async function flushShared() {

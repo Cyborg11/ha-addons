@@ -220,7 +220,7 @@
     } catch (e) { /* Verlauf ist nur Zusatz */ }
   }
 
-  whileVisible("ctrl", () => { loadPrograms(); loadProcesses(); }, 8000);
-  whileVisible("tools", loadHistory, 15000);
+  whileVisible("ctrl", loadProcesses, 8000);
+  whileVisible("tools", () => { loadHistory(); loadPrograms(); }, 10000);      // Programme (ComfyUI …) stehen bei den KI-Tools
   window.addEventListener("pcc:features", () => { loadPrograms(); });
 })();

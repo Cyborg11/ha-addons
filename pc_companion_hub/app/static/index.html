@@ -42,17 +42,24 @@
 <section id="offline" class="center" hidden>
   <div class="panel narrow">
     <div class="offline-icon"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></div>
-    <h2>PC ist aus</h2>
+    <h2 id="offtitle">PC ist aus</h2>
+    <div id="offseen" class="muted"></div>
+    <div id="offstats" class="offstats" hidden></div>
     <button id="wake" class="primary wakebtn">PC aufwecken</button>
     <div id="wakemsg"></div>
+    <p class="hint" id="offhint">Läuft der PC, aber der Agent nicht (Absturz, Neustart ohne Anmeldung), hilft Aufwecken nicht – dann am PC anmelden oder den Agenten starten.</p>
+    <button id="offhist_btn" class="linkbtn" type="button">Verlauf ansehen</button>
   </div>
+  <div id="offhist" class="offhist" hidden></div>
 </section>
 
 <section id="waking" class="center" hidden>
   <div class="panel narrow">
     <div class="spinner"></div>
     <h2>PC startet …</h2>
+    <div class="bar wakebar"><i id="wakebar"></i></div>
     <div id="countdown"></div>
+    <div class="hint" id="wakehint">Magic Packet gesendet. Windows braucht meist 30–60 Sekunden, bis der Agent antwortet.</div>
   </div>
 </section>
 
@@ -122,6 +129,7 @@
         <summary><h3>Top 5 Programme</h3></summary>
         <div class="seg" id="top_kinds"></div>
         <div id="top_list" class="muted"></div>
+        <div class="loadrow" id="top_loading" hidden><i class="spinner sm"></i><span>Messe … das dauert einige Sekunden</span></div>
         <div class="muted small" id="top_hint"></div>
         <button id="top_reload">Aktualisieren</button>
         <div id="top_msg"></div>
@@ -142,9 +150,15 @@
     <div class="panel pad">
       <h3>KI-Tools auf dem PC</h3>
       <div id="tiles" class="tiles"></div>
-      <p id="notools" class="hint" hidden>Noch keine Tools eingerichtet. Im Add-on unter <code>tools</code> Einträge anlegen, z. B. Name „Master Dashboard“ und Adresse <code>http://&lt;pc-tailscale-name&gt;:7880</code>.</p>
+      <p id="notools" class="hint" hidden>Noch keine Web-Oberflächen eingerichtet. Im Add-on unter <code>tools</code> Einträge anlegen, z. B. Name „Master Dashboard“ und Adresse <code>http://&lt;pc-tailscale-name&gt;:7880</code>. Programme zum Starten und Beenden (z. B. ComfyUI) stehen darunter, sobald sie in der <code>config.yaml</code> des Agenten unter <code>programs:</code> stehen.</p>
     </div>
   
+    <div class="panel pad" id="progpanel" data-feature="programs" hidden>
+      <h3>Programme auf dem PC</h3>
+      <div id="prog_list" class="muted">…</div>
+      <div id="prog_msg"></div>
+    </div>
+
     <div class="panel pad" id="histpanel" data-feature="job_history" hidden>
       <h3>Job-Verlauf</h3>
       <div id="hist_list" class="muted">…</div>
@@ -153,6 +167,12 @@
 
   <!-- ============ Steuerung ============ -->
   <div class="view" data-view="ctrl" hidden>
+    <div class="seg subnav" id="subnav" role="tablist" aria-label="Steuerung">
+      <button class="segbtn" data-sub="control" role="tab">Steuern</button>
+      <button class="segbtn" data-sub="tools" role="tab">Werkzeuge</button>
+      <button class="segbtn" data-sub="devices" role="tab">Geräte &amp; Protokoll</button>
+    </div>
+    <div class="subview" data-sub="control">
     <div class="panel pad" id="actions">
       <h3>Energie</h3>
       <div class="grid4">
@@ -201,12 +221,17 @@
       <div id="plan_msg"></div>
     </div>
 
-    <div class="panel pad" id="progpanel" data-feature="programs" hidden>
-      <h3>Programme</h3>
-      <div id="prog_list" class="muted">…</div>
-      <div id="prog_msg"></div>
+    <div class="panel pad">
+      <h3>Link am PC öffnen</h3>
+      <div class="row">
+        <input id="url" type="url" placeholder="https://…">
+        <button id="openurl" class="primary">Öffnen</button>
+      </div>
+      <div id="actmsg"></div>
     </div>
-
+  
+    </div>
+    <div class="subview" data-sub="tools" hidden>
     <details class="panel pad" id="proc_box" data-feature="processes" hidden>
       <summary><h3>Prozesse</h3></summary>
       <div class="seg" id="proc_sort"><button class="segbtn" data-k="cpu">CPU</button><button class="segbtn" data-k="mem">RAM</button><button class="segbtn" data-k="vram">VRAM</button></div>
@@ -222,7 +247,8 @@
       <div class="row"><button id="clip_send" class="primary">An PC senden</button><button id="clip_get" hidden>Vom PC holen</button></div>
       <div id="clip_msg"></div>
     </div>
-
+    </div>
+    <div class="subview" data-sub="devices" hidden>
     <div class="panel pad" id="notifypanel">
       <h3>Benachrichtigungen</h3>
       <div id="nt_info" class="muted">…</div>
@@ -258,14 +284,6 @@
       <div id="audit_list" class="muted">…</div>
       <button id="audit_reload" class="primary">Aktualisieren</button>
     </div>
-
-    <div class="panel pad">
-      <h3>Link am PC öffnen</h3>
-      <div class="row">
-        <input id="url" type="url" placeholder="https://…">
-        <button id="openurl" class="primary">Öffnen</button>
-      </div>
-      <div id="actmsg"></div>
     </div>
   </div>
 
@@ -274,6 +292,7 @@
   <div class="view" data-view="gallery" hidden>
     <div class="panel pad">
       <h3>Galerie <small id="gal_count" class="muted"></small></h3>
+      <div class="seg" id="gal_chips" hidden></div>
       <div class="row"><select id="gal_folder" aria-label="Ordner" hidden></select><button id="gal_reload">Aktualisieren</button></div>
       <div id="gal_grid"></div>
       <button id="gal_more" class="primary" hidden>Mehr laden</button>
@@ -289,8 +308,16 @@
         <button id="up_pick" class="primary">Dateien wählen</button>
         <input id="up_files" type="file" multiple hidden>
       </div>
+      <div id="up_drop" class="dropzone" tabindex="0" role="button" aria-label="Dateien hierher ziehen oder antippen">
+        <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        <span>Dateien hierher ziehen oder tippen</span>
+      </div>
       <div id="up_msg"></div>
       <div id="up_list"></div>
+    </div>
+    <div class="panel pad" id="up_recent_box" hidden>
+      <h3>Zuletzt gesendet <button id="up_clear" class="linkbtn" type="button">Liste leeren</button></h3>
+      <div id="up_recent"></div>
     </div>
   </div>
 </main>
@@ -304,8 +331,12 @@
 </nav>
 
 <div id="viewer" hidden>
-  <div class="vbar"><span id="viewer_title"></span><span><button id="viewer_save" class="primary">Speichern</button><button id="viewer_close">Schließen</button></span></div>
-  <img id="viewer_img" alt="">
+  <div class="vbar"><span id="viewer_title"></span><span><span id="viewer_pos" class="muted"></span><button id="viewer_save" class="primary">Speichern</button><button id="viewer_close">Schließen</button></span></div>
+  <div class="vstage">
+    <button id="viewer_prev" class="vnav" aria-label="Voriges Bild" hidden>‹</button>
+    <img id="viewer_img" alt="">
+    <button id="viewer_next" class="vnav" aria-label="Nächstes Bild" hidden>›</button>
+  </div>
 </div>
 
 <script src="app.js"></script>

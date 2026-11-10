@@ -164,3 +164,22 @@ def test_preview_proxy_auth_and_forward(client):
     r = client.get("/api/job/abc/preview", headers=AUTH)
     assert r.status_code == 200 and r.content == b"PNGDATA" and r.headers["content-type"] == "image/png"
     assert client.get("/api/job/..%2Fx/preview", headers=AUTH).status_code == 404
+
+
+def test_brief_stats_and_offline_message(tmp_path):
+    from app.hub import Hub, brief_stats
+    snap = {"gpu": {"util_pct": 40, "temp_c": 61}, "cpu": {"util_pct": 12.6}, "ram": {"used_mb": 8000, "total_mb": 32000}, "uptime_s": 99}
+    assert brief_stats(snap) == {"cpu": 13, "ram": 25, "gpu": 40, "temp": 61, "uptime_s": 99}
+    assert brief_stats({}) == {"cpu": None, "ram": None, "gpu": None, "temp": None, "uptime_s": None}
+    h = Hub({"agent_host": "x"}, "pc1", "Test")
+    m = h.message()
+    assert m["last_seen"] is None and m["last_stats"] is None and m["waking_total"] == WAKE_TIMEOUT_S
+
+
+def test_last_seen_survives_restart_through_history(tmp_path):
+    from app import history as hist
+    h = hist.History(tmp_path / "h.db")
+    assert h.last_t("pc1") is None
+    h.db.execute("INSERT INTO samples VALUES ('pc1', 1234, 1,1,1,1,1,1)")
+    h.db.commit()
+    assert h.last_t("pc1") == 1234 and h.last_t("anderer") is None

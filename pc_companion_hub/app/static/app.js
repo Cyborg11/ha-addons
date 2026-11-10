@@ -28,6 +28,18 @@ function showTab(name) {
 }
 document.querySelectorAll("#tabs button").forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
 
+/* ---------------- Unterreiter (Steuerung: Steuern · Werkzeuge · Geräte & Protokoll) ---------------- */
+let sub = store.get("pcc_sub") || "control";
+function showSub(name) {
+  const btn = document.querySelector('#subnav [data-sub="' + name + '"]');
+  sub = btn && !btn.hidden ? name : "control";
+  store.set("pcc_sub", sub);
+  document.querySelectorAll(".subview").forEach(v => { v.hidden = v.dataset.sub !== sub; });
+  document.querySelectorAll("#subnav button").forEach(b => { const on = b.dataset.sub === sub; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
+}
+document.querySelectorAll("#subnav button").forEach(b => { b.onclick = () => showSub(b.dataset.sub); });
+showSub(sub);
+
 /* ---------------- Formatierung ---------------- */
 const n = (v, unit = "") => (v === null || v === undefined ? "–" : v + unit);
 const gb = mb => (mb === null || mb === undefined ? "–" : (mb / 1024).toFixed(1));
@@ -35,6 +47,7 @@ function rate(kbps) {
   kbps = kbps || 0;
   return kbps >= 1000 ? (kbps / 1000).toFixed(1) + " Mbit/s" : Math.round(kbps) + " kbit/s";
 }
+const fmtSize = g => (g >= 1000 ? (g / 1024).toFixed(2).replace(".", ",") + " TB" : Math.round(g) + " GB");
 function level(v, warn, crit) { return v >= crit ? "crit" : v >= warn ? "warn" : "ok"; }
 
 /* ---------------- Ringe & Balken ---------------- */
@@ -54,7 +67,7 @@ function setBar(id, frac, lv) {
 }
 
 /* ---------------- Verlaufsgrafiken ---------------- */
-function spark(id, series, colors, max) {
+function spark(id, series, colors, max, fmt) {
   const cv = $(id);
   const w = cv.clientWidth, h = cv.clientHeight;
   if (!w || !h) return;
@@ -68,6 +81,10 @@ function spark(id, series, colors, max) {
   ctx.strokeStyle = "rgba(255,255,255,.06)"; ctx.lineWidth = 1;
   for (let i = 1; i < 4; i++) { const y = Math.round(h * i / 4) + .5; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
   const top = max || Math.max(1, ...series.flat()) * 1.2;
+  ctx.fillStyle = "rgba(255,255,255,.38)"; ctx.font = "10px system-ui,sans-serif"; ctx.textAlign = "left";   // Achsenwerte
+  const f = fmt || (v => Math.round(v));
+  ctx.fillText(f(top), 6, 11); ctx.fillText(f(top / 2), 6, Math.round(h / 2) + 3); ctx.fillText(f(0), 6, h - 5);
+  ctx.textAlign = "right"; ctx.fillText("−2 min", w - 6, 11);
   series.forEach((arr, si) => {
     if (arr.length < 2) return;
     const pts = arr.map((v, i) => [w * (i + HIST - arr.length) / (HIST - 1), h - 4 - Math.min(v / top, 1) * (h - 8)]);
@@ -88,7 +105,7 @@ function drawAll() {
   spark("g_gpu", [hist.gpu, hist.temp], ["--gpu", "--temp"], 100);
   spark("g_cpu", [hist.cpu], ["--cpu"], 100);
   spark("g_ram", [hist.ram], ["--ram"], 100);
-  spark("g_net", [hist.down, hist.up], ["--net", "--disk"]);
+  spark("g_net", [hist.down, hist.up], ["--net", "--disk"], 0, rate);
 }
 
 function push(key, v) {
@@ -112,10 +129,11 @@ function renderDisks(disks) {
   const box = $("disks");
   if (box.children.length !== disks.length) {
     box.innerHTML = disks.map((d, i) =>
-      `<div class="disk"><div class="mh"><span>${d.mount}</span><b id="dv${i}"></b></div><div class="bar"><i id="db${i}"></i></div></div>`).join("");
+      `<div class="disk"><div class="mh"><span>${d.mount}</span><b id="dv${i}"></b></div><div class="bar"><i id="db${i}"></i></div><small class="muted" id="ds${i}"></small></div>`).join("");
   }
   disks.forEach((d, i) => {
     $("dv" + i).textContent = d.used_pct + " %";
+    $("ds" + i).textContent = d.total_gb != null && d.free_gb != null ? fmtSize(d.free_gb) + " frei von " + fmtSize(d.total_gb) : "";
     setBar("db" + i, d.used_pct / 100, level(d.used_pct, 85, 95));
   });
 }
@@ -258,6 +276,8 @@ function applyRole(r) {
 function setFeatures(list) {
   features = Array.isArray(list) ? list : [];
   document.querySelectorAll("[data-feature]").forEach(el => { el.hidden = !features.includes(el.dataset.feature); });
+  const toolsSub = document.querySelector('#subnav [data-sub="tools"]');       // „Werkzeuge“ nur, wenn der Agent Prozesse oder Zwischenablage kann
+  if (toolsSub) { toolsSub.hidden = !(features.includes("processes") || features.includes("clipboard")); showSub(sub); }
   if (tab === "gallery" && !features.includes("gallery")) showTab("dash");
   window.dispatchEvent(new CustomEvent("pcc:features"));
 }
@@ -379,21 +399,62 @@ function applyState(m) {
   setFeatures(m.features);
   renderTools(m.tools || []);
   if (m.status === "online") {
+    restoreHistCard();
     if ($("live").hidden) { show("live"); showTab(tab); }
     if (m.snapshot) { render(m.snapshot); $("host").textContent = m.name || m.snapshot.host || "PC"; }
   } else if (m.status === "waking") {
     show("waking");
     $("host").textContent = m.name || m.host || "PC-Companion";
     $("sub").textContent = "";
-    $("countdown").textContent = "noch bis zu " + (m.waking_left ?? "?") + " s";
+    const left = m.waking_left ?? 0, total = m.waking_total || 120;
+    $("countdown").textContent = "noch bis zu " + left + " s";
+    $("wakebar").style.width = Math.max(4, Math.min(100, 100 * (1 - left / total))) + "%";
+    $("wakebar").style.setProperty("--b", "var(--warn)");
   } else {
     show("offline");
     $("host").textContent = m.name || m.host || "PC-Companion";
     $("sub").textContent = "";
     $("wake").disabled = !m.wol_configured;
     $("wakemsg").textContent = m.wol_configured ? "" : "MAC-Adresse im Add-on nicht konfiguriert.";
+    paintOffline(m);
     for (const k in hist) hist[k].length = 0;
   }
+}
+
+/* ---------------- Offline-Seite: zuletzt gesehen, letzte Werte, Verlauf ---------------- */
+let offlineSince = null;
+function ago(sec) {
+  if (sec < 90) return "gerade eben";
+  const m = Math.round(sec / 60);
+  if (m < 90) return "vor " + m + " Min.";
+  const h = Math.floor(sec / 3600), rest = Math.round((sec % 3600) / 60);
+  if (h < 48) return "vor " + h + " Std." + (h < 10 && rest ? " " + rest + " Min." : "");
+  return "vor " + Math.floor(sec / 86400) + " Tagen";
+}
+function paintOffline(m) {
+  offlineSince = m.last_seen || null;
+  tickOffline();
+  const st = m.last_stats, box = $("offstats");
+  box.hidden = !st;
+  if (st) {
+    const bits = [["CPU", st.cpu, "%"], ["RAM", st.ram, "%"], ["GPU", st.gpu, "%"], ["GPU", st.temp, "°C"]].filter(b => b[1] != null);
+    box.textContent = "Zuletzt: " + bits.map(b => b[0] + " " + b[1] + " " + b[2]).join(" · ");
+  }
+  $("offhist_btn").hidden = !offlineSince;
+}
+function tickOffline() {
+  if ($("offline").hidden) return;
+  $("offseen").textContent = offlineSince ? "Zuletzt online " + ago(Date.now() / 1000 - offlineSince) : "Noch nie online gesehen.";
+}
+setInterval(tickOffline, 30000);
+const histHome = $("histcard").parentNode;
+$("offhist_btn").onclick = () => {
+  const card = $("histcard"), box = $("offhist");
+  if (box.hidden) { box.hidden = false; box.appendChild(card); $("offhist_btn").textContent = "Verlauf ausblenden"; window.dispatchEvent(new CustomEvent("pcc:histshow")); }
+  else { box.hidden = true; histHome.appendChild(card); $("offhist_btn").textContent = "Verlauf ansehen"; }
+};
+function restoreHistCard() {
+  if ($("histcard").parentNode !== histHome) { $("offhist").hidden = true; histHome.appendChild($("histcard")); $("offhist_btn").textContent = "Verlauf ansehen"; }
 }
 
 let trusted = false, authInfo = null, tokenMode = false;

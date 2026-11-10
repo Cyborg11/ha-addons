@@ -21,6 +21,14 @@ def compute_status(online: bool, wake_started: float | None, now: float) -> str:
     return "offline"
 
 
+def brief_stats(snap: dict) -> dict:
+    """Wenige Kennzahlen aus einem Snapshot, damit die Offline-Seite zeigen kann, wie es dem PC zuletzt ging."""
+    g, c, r = snap.get("gpu") or {}, snap.get("cpu") or {}, snap.get("ram") or {}
+    ram = round(100 * r["used_mb"] / r["total_mb"]) if r.get("total_mb") and r.get("used_mb") is not None else None
+    return {"cpu": None if c.get("util_pct") is None else round(c["util_pct"]), "ram": ram,
+            "gpu": g.get("util_pct"), "temp": g.get("temp_c"), "uptime_s": snap.get("uptime_s")}
+
+
 class Hub:
     def __init__(self, opts: dict, pc_id: str = "pc1", name: str | None = None):
         self.opts = opts
@@ -34,6 +42,8 @@ class Hub:
         self.agent_host: str | None = None
         self.features: list[str] = []         # Zusatzfunktionen des Agenten (/health), leer bei älteren Agenten
         self.snapshot: dict | None = None
+        self.last_seen: float | None = None   # Zeitpunkt der letzten erfolgreichen Statusprüfung (Unix-Zeit)
+        self.last_stats: dict | None = None   # letzte Kennzahlen vor dem Ausfall (für die Offline-Seite)
         self.wake_started: float | None = None
         self.clients: set = set()
         self.on_snapshot = None               # Rückruf(pc_id, snapshot), z. B. für den Langzeitverlauf
@@ -54,6 +64,9 @@ class Hub:
             "api_expected": EXPECTED_API_VERSION,
             "host": self.agent_host,
             "waking_left": left,
+            "waking_total": WAKE_TIMEOUT_S,
+            "last_seen": self.last_seen,
+            "last_stats": self.last_stats,
             "wol_configured": bool(self.opts.get("pc_mac")),
             "snapshot": self.snapshot,
             "tools": self.tools(),
@@ -91,6 +104,7 @@ class Hub:
             async with websockets.connect(url, open_timeout=3) as ws:
                 async for raw in ws:
                     self.snapshot = json.loads(raw)
+                    self.last_stats = brief_stats(self.snapshot)
                     if self.on_snapshot:
                         try:
                             self.on_snapshot(self.pc_id, self.snapshot)
@@ -113,6 +127,7 @@ class Hub:
             pass
         if online:
             self.wake_started = None
+            self.last_seen = time.time()
         self.status = compute_status(online, self.wake_started, time.time())
         if self.on_status:
             try:

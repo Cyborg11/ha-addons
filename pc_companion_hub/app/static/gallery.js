@@ -15,17 +15,37 @@
   }
 
   /* ---- Betrachter ---- */
-  window.openViewer = function ({ blob, title, filename, load }) {
-    const v = $("viewer");
+  let vseq = 0, vnav = null;
+  // nav (optional): { pos, total, prev(), next() } – Pfeile, Tastatur und Wischen blättern durch die Galerie
+  window.openViewer = function ({ blob, title, filename, load, nav }) {
+    const v = $("viewer"), my = ++vseq;
     if (viewerUrl) { URL.revokeObjectURL(viewerUrl); viewerUrl = null; }
     v.hidden = false;
+    vnav = nav || null;
+    $("viewer_prev").hidden = !(nav && nav.prev);
+    $("viewer_next").hidden = !(nav && nav.next);
+    $("viewer_pos").textContent = nav ? nav.pos + " / " + nav.total : "";
     $("viewer_title").textContent = title || "";
     $("viewer_img").removeAttribute("src");
-    const show = b => { viewerUrl = URL.createObjectURL(b); $("viewer_img").src = viewerUrl; $("viewer_save").onclick = () => saveBlob(b, filename || "bild.png"); };
+    const show = b => { if (my !== vseq) return; viewerUrl = URL.createObjectURL(b); $("viewer_img").src = viewerUrl; $("viewer_save").onclick = () => saveBlob(b, filename || "bild.png"); };
     if (blob) show(blob);
-    else if (load) { $("viewer_title").textContent = (title || "") + " – lädt …"; load().then(b => { $("viewer_title").textContent = title || ""; show(b); }).catch(e => { $("viewer_title").textContent = e.message; }); }
+    else if (load) {
+      $("viewer_title").textContent = (title || "") + " – lädt …";
+      load().then(b => { if (my !== vseq) return; $("viewer_title").textContent = title || ""; show(b); }).catch(e => { if (my === vseq) $("viewer_title").textContent = e.message; });
+    }
   };
+  const step = d => { const f = vnav && (d < 0 ? vnav.prev : vnav.next); if (f) f(); };
+  $("viewer_prev").onclick = () => step(-1);
+  $("viewer_next").onclick = () => step(1);
+  let sx = null;
+  $("viewer").addEventListener("touchstart", e => { sx = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+  $("viewer").addEventListener("touchend", e => {
+    if (sx == null) return;
+    const dx = e.changedTouches[0].clientX - sx; sx = null;
+    if (Math.abs(dx) > 60) step(dx > 0 ? -1 : 1);
+  }, { passive: true });
   function closeViewer() {
+    vseq++; vnav = null;
     $("viewer").hidden = true;
     if (viewerUrl) { URL.revokeObjectURL(viewerUrl); viewerUrl = null; }
   }
@@ -39,7 +59,12 @@
   }
   $("viewer_close").onclick = closeViewer;
   $("viewer").addEventListener("click", e => { if (e.target === $("viewer")) closeViewer(); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("viewer").hidden) closeViewer(); });
+  document.addEventListener("keydown", e => {
+    if ($("viewer").hidden) return;
+    if (e.key === "Escape") closeViewer();
+    else if (e.key === "ArrowLeft") step(-1);
+    else if (e.key === "ArrowRight") step(1);
+  });
 
   /* ---- Galerie ---- */
   const q = o => Object.entries(o).filter(([, v]) => v !== "" && v != null).map(([k, v]) => k + "=" + encodeURIComponent(v)).join("&");
@@ -72,21 +97,50 @@
     pump();
   }
 
-  function addTiles(list) {
+  function openAt(i) {
+    const it = items[i], name = it.name.split("/").pop();
+    openViewer({
+      title: name, filename: name,
+      load: () => fetchBlob("api/gallery/file?" + q({ folder, name: it.name })),
+      nav: {
+        pos: i + 1, total,
+        prev: i > 0 ? () => openAt(i - 1) : null,
+        next: i < items.length - 1 ? () => openAt(i + 1)
+          : (items.length < total ? async () => { await load(false); if (i + 1 < items.length) openAt(i + 1); } : null),
+      },
+    });
+    for (const j of [i + 1, i - 1]) if (items[j]) fetchBlob("api/gallery/file?" + q({ folder, name: items[j].name })).catch(() => {});   // Nachbarn schon laden
+  }
+
+  function addTiles(list, base) {
     const grid = $("gal_grid");
-    for (const it of list) {
+    list.forEach((it, k) => {
+      const idx = base + k, label = it.name.split("/").pop().replace(/\.[^.]+$/, "");
       const b = document.createElement("button");
       b.className = "gtile";
       b.title = it.name;
       const img = document.createElement("img");
       img.alt = it.name;
-      b.append(img);
-      b.onclick = () => openViewer({
-        title: it.name.split("/").pop(), filename: it.name.split("/").pop(),
-        load: () => fetchBlob("api/gallery/file?" + q({ folder, name: it.name })),
-      });
+      const cap = document.createElement("span");
+      cap.className = "gcap";
+      cap.textContent = label;
+      b.append(img, cap);
+      b.onclick = () => openAt(idx);
       grid.append(b);
       loadThumb(img, it.name);
+    });
+  }
+
+  // Wenige Ordner als Schalter, viele als Auswahlliste
+  function paintFolders() {
+    const chips = $("gal_chips"), sel = $("gal_folder"), few = folders.length >= 2 && folders.length <= 6;
+    chips.hidden = !few; sel.hidden = few || folders.length < 2;
+    chips.textContent = "";
+    if (few) for (const f of folders) {
+      const b = document.createElement("button");
+      b.className = "segbtn" + (f === folder ? " on" : ""); b.textContent = f;
+      b.onclick = () => { folder = f; load(true); };
+      chips.append(b);
     }
   }
 
@@ -98,11 +152,12 @@
       if (reset) { items = []; $("gal_grid").textContent = ""; }
       const d = await getJson("api/gallery?" + q({ folder, limit: PAGE, offset: items.length }));
       folders = d.folders; folder = d.folder; total = d.total;
+      const base = items.length;
       items = items.concat(d.items);
-      addTiles(d.items);
+      addTiles(d.items, base);
       loadedPc = current; loadedAt = Date.now();
       const sel = $("gal_folder");
-      sel.hidden = folders.length < 2;
+      paintFolders();
       if (sel.options.length !== folders.length) { sel.textContent = ""; for (const f of folders) sel.append(new Option(f, f)); }
       sel.value = folder;
       $("gal_more").hidden = items.length >= total;
