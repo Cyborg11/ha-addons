@@ -92,6 +92,7 @@
     try {
       const d = await call("GET", "api/steam/games?sort=recent");
       games = d.games || []; loadedPc = current; loadedAt = Date.now();
+      saveRecent();
       if (!view.hidden) paintGrid();
       if (!$("st_sheet").hidden) paintSheet();
     } catch (e) { $("st_msg").textContent = e.message; }
@@ -239,6 +240,72 @@
     if (dlbox.open && !view.hidden) { loadDownloads(); dlTimer = setInterval(() => { if (!document.hidden) loadDownloads(); }, 10000); }
   }
   dlbox.addEventListener("toggle", dlWatch);
+
+  /* ---- Aufwecken und starten (Offline-Seite, Warte-Seite, Hinweis) ---- */
+  const RECENT_KEY = () => "pcc_steam_recent|" + current;
+  function saveRecent() {
+    const list = games.filter(g => g.launchable).sort(cmp.recent).slice(0, 8).map(g => ({ appid: g.appid, name: g.name, art_ver: g.art_ver }));
+    store.set(RECENT_KEY(), JSON.stringify(list));
+  }
+  function recent() {
+    try { const l = JSON.parse(store.get(RECENT_KEY()) || "[]"); return Array.isArray(l) ? l.filter(g => g && Number.isInteger(g.appid) && typeof g.name === "string") : []; }
+    catch (e) { return []; }
+  }
+  let offKey = "", toastTimer = 0, lastToast = 0;
+  const offCovers = new Map();
+
+  async function wakeLaunch(appid, name) {
+    if (!confirm("PC aufwecken und „" + name + "“ starten?")) return;
+    const msg = $("wakemsg");
+    msg.textContent = "Sende Magic Packet …";
+    try { await call("POST", "api/steam/games/" + appid + "/launch?wake=true&name=" + encodeURIComponent(name)); msg.textContent = ""; }
+    catch (e) { msg.textContent = e.message; }
+  }
+  async function cancelPending(m) {
+    try { await call("DELETE", "api/steam/games/" + m.pending_launch.appid + "/launch"); } catch (e) { /* der Hub meldet den Stand ohnehin gleich */ }
+  }
+  function paintOfflineGames(m) {
+    const list = m.status === "offline" && m.wol_configured && !m.pending_launch ? recent() : [];
+    const key = current + "|" + list.map(g => g.appid).join(",");
+    $("offgames").hidden = !list.length;
+    if (key === offKey) return;
+    offKey = key;
+    const grid = $("offgames_grid");
+    grid.textContent = "";
+    for (const g of list) {
+      const b = document.createElement("button");
+      b.className = "sttile";
+      b.title = g.name;
+      const frame = document.createElement("div"), img = document.createElement("img"), ph = document.createElement("span"), cap = document.createElement("span");
+      frame.className = "stcover"; img.alt = ""; ph.className = "stph"; ph.textContent = g.name;
+      cap.className = "gcap"; cap.textContent = g.name;
+      frame.append(ph, img); b.append(frame, cap);
+      b.onclick = () => wakeLaunch(g.appid, g.name);
+      grid.append(b);
+      loadArt(img, g.appid, "cover", 200, g.art_ver, offCovers, ok => { if (ok) ph.hidden = true; });   // klappt nur, solange das Bild im Browser-Cache liegt
+    }
+  }
+  function showToast(text, ok) {
+    const t = $("launchtoast");
+    t.textContent = text; t.className = "toast" + (ok === false ? " bad" : ok ? " good" : ""); t.hidden = false;
+    clearTimeout(toastTimer);
+    if (ok != null) toastTimer = setTimeout(() => { t.hidden = true; }, 14000);
+  }
+  window.addEventListener("pcc:state", e => {
+    const m = e.detail, p = m.pending_launch, r = m.launch_result;
+    const wake = $("wakepending"), off = $("offpending");
+    wake.hidden = !(p && m.status === "waking");
+    off.hidden = !(p && m.status === "offline");
+    for (const [el, txt] of [[wake, "wakepending_txt"], [off, "offpending_txt"]]) if (!el.hidden) $(txt).textContent = "Startet danach: " + p.name;
+    paintOfflineGames(m);
+    if (p && m.status === "online") showToast("Startet gleich: " + p.name + " …", null);
+    else if (r && r.at !== lastToast) { lastToast = r.at; showToast(r.ok ? "„" + r.name + "“ gestartet." : "„" + r.name + "“ nicht gestartet: " + r.message, r.ok); }
+    else if (!p && $("launchtoast").className === "toast") $("launchtoast").hidden = true;
+    window.__pendingMsg = m;
+  });
+  $("wakepending_cancel").onclick = () => window.__pendingMsg && cancelPending(window.__pendingMsg);
+  $("offpending_cancel").onclick = () => window.__pendingMsg && cancelPending(window.__pendingMsg);
+  $("launchtoast").onclick = () => { $("launchtoast").hidden = true; };
 
   /* ---- Steuerleiste ---- */
   $("st_sort").value = cmp[sort] ? sort : "recent";

@@ -409,6 +409,7 @@ function onMessage(m) {
 
 function applyState(m) {
   window.dispatchEvent(new CustomEvent("pcc:status", { detail: m.status }));
+  window.dispatchEvent(new CustomEvent("pcc:state", { detail: m }));
   const badge = $("badge");
   badge.textContent = STATUS_TEXT[m.status] || m.status;
   badge.className = "badge " + m.status;
@@ -427,6 +428,9 @@ function applyState(m) {
     $("countdown").textContent = "noch bis zu " + left + " s";
     $("wakebar").style.width = Math.max(4, Math.min(100, 100 * (1 - left / total))) + "%";
     $("wakebar").style.setProperty("--b", "var(--warn)");
+    $("wakehint").textContent = m.wake_mode === "cold"
+      ? "Kaltstart: Windows fährt hoch, meldet sich per Autologin an und startet dann den Agenten. Das dauert meist 1–3 Minuten."
+      : "Magic Packet gesendet. Aus dem Energiesparmodus ist der PC meist nach wenigen Sekunden wieder da, nach Ruhezustand oder Herunterfahren dauert es länger.";
   } else {
     show("offline");
     $("host").textContent = m.name || m.host || "PC-Companion";

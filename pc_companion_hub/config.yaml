@@ -1,5 +1,5 @@
 name: "PC-Companion Hub"
-version: "0.17.0"
+version: "0.18.0"
 slug: pc_companion_hub
 description: "Dashboard und Wake-on-LAN für den PC-Companion-Agenten (Gaming-PC)"
 url: "https://github.com/Cyborg11/PCCompanion"
@@ -29,6 +29,7 @@ options:
   ui_token: ""
   pin: ""
   pcs: []
+  wake_mode: "standby"
   notify_service: ""
   notify_jobs: true
   notify_pc_state: true
@@ -41,6 +42,9 @@ schema:
   agent_token: password?
   pc_mac: str?
   broadcast_ip: str?
+  wake_mode: list(standby|cold)?
+  wake_timeout_s: int(30,900)?
+  launch_delay_s: int(0,180)?
   pcs:
     - name: str
       host: str
@@ -48,6 +52,9 @@ schema:
       token: password
       mac: str?
       broadcast_ip: str?
+      wake_mode: list(standby|cold)?
+      wake_timeout_s: int(30,900)?
+      launch_delay_s: int(0,180)?
   ui_token: password?
   pin: password?
   notify_service: str?

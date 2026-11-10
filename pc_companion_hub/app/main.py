@@ -29,7 +29,7 @@ logredact.install()          # Token aus Adressen im Zugriffsprotokoll entfernen
 TRUSTED_PROXY_IPS = {"172.30.32.2"}
 STATIC = Path(__file__).parent / "static"
 ALLOWED_ACTIONS = {
-    "lock", "sleep", "shutdown", "restart", "restart_agent", "cancel_shutdown", "volume", "mute",
+    "lock", "sleep", "standby", "shutdown", "restart", "restart_agent", "cancel_shutdown", "volume", "mute",
     "media_play_pause", "media_next", "media_prev", "open_url", "clipboard_set", "monitor_off",
 }
 SAFE_ID = re.compile(r"[A-Za-z0-9._:-]{1,80}")
@@ -75,6 +75,9 @@ def build_pcs(opts: dict) -> list[tuple[str, str | None, dict]]:
         )
         if entry.get("tools"):
             merged["tools"] = entry["tools"]
+        for key in ("wake_mode", "wake_timeout_s", "launch_delay_s"):       # je PC überschreibbar
+            if entry.get(key) is not None:
+                merged[key] = entry[key]
         out.append((pid, name, merged))
     if not out:
         out.append(("pc1", None, dict(opts)))
@@ -130,7 +133,12 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         history.feed(pc_id, snap)
         notifier.on_snapshot(pc_id, pc_label(hubs[pc_id]), snap)
 
+    def on_launch(hub_: Hub, result: dict) -> None:
+        audit.add("Hub", "Spiel gestartet (nach Aufwecken)" if result["ok"] else "Spielstart nach Aufwecken fehlgeschlagen",
+                  pc_label(hub_), f"{result['name']} ({result['appid']}): {result['message']}"[:300], result["ok"])
+
     for h in hubs.values():
+        h.on_launch = on_launch
         h.on_snapshot = on_snapshot
         h.on_status = lambda hub_, n=notifier: n.on_status(hub_.pc_id, pc_label(hub_), hub_.status)
     if not opts.get("ui_token") and not opts.get("pin"):
@@ -439,12 +447,32 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         return await relay(request, hub, "GET", f"/api/steam/art/{steam_appid(appid)}/{kind}", params=take(request, ("w",)),
                            timeout=20.0, cache="private, max-age=86400")
 
+    def clean_name(value: str) -> str:
+        return "".join(c for c in value if c.isprintable()).strip()[:80]
+
     @app.post("/api/steam/games/{appid}/launch", dependencies=[Depends(require_write)])
-    async def steam_launch(appid: int, request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
+    async def steam_launch(appid: int, request: Request, body: dict | None = Body(default=None), wake: bool = False, name: str = "",
+                           hub: Hub = Depends(get_hub)):
         steam_appid(appid)
+        if wake and hub.status != "online":
+            # Aufwecken und starten: Magic Packet senden (falls der PC noch aus ist), Spiel vormerken, der Hub startet es nach dem Hochfahren
+            if hub.status == "offline":
+                send_wake(hub)
+            shown = clean_name(name) or f"AppID {appid}"
+            hub.queue_launch(appid, shown)
+            record(request, "Aufwecken und starten", pc=hub.name or hub.pc_id, detail=f"{shown} ({appid})")
+            return JSONResponse({"pending": True, "appid": appid, "name": shown, "mode": hub.wake_mode}, status_code=202)
         force = bool((body or {}).get("force"))
         return await relay(request, hub, "POST", f"/api/steam/games/{appid}/launch", body={"force": force},
                            what="Spiel gestartet", detail=await steam_label(hub, appid), timeout=20.0)
+
+    @app.delete("/api/steam/games/{appid}/launch", dependencies=[Depends(require_write)])
+    async def steam_launch_cancel(appid: int, request: Request, hub: Hub = Depends(get_hub)):
+        steam_appid(appid)
+        cancelled = hub.cancel_launch(appid)
+        if cancelled:
+            record(request, "Spielstart nach Aufwecken abgebrochen", pc=hub.name or hub.pc_id, detail=f"AppID {appid}")
+        return {"ok": True, "cancelled": cancelled}
 
     @app.post("/api/steam/games/{appid}/stop", dependencies=[Depends(require_write)])
     async def steam_stop(appid: int, request: Request, hub: Hub = Depends(get_hub)):
@@ -495,8 +523,7 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     def pcs(request: Request):
         return {"pcs": pc_list(), "default": next(iter(hubs)), "role": request.state.principal["role"]}
 
-    @app.post("/api/wake", dependencies=[Depends(require_write)])
-    def wake(request: Request, hub: Hub = Depends(get_hub)):
+    def send_wake(hub: Hub) -> None:
         if not hub.opts.get("pc_mac"):
             raise HTTPException(status_code=400, detail="MAC-Adresse ist nicht konfiguriert")
         try:
@@ -506,6 +533,10 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         except OSError as e:
             raise HTTPException(status_code=502, detail=f"Senden fehlgeschlagen: {e}")
         hub.start_wake()
+
+    @app.post("/api/wake", dependencies=[Depends(require_write)])
+    def wake(request: Request, hub: Hub = Depends(get_hub)):
+        send_wake(hub)
         record(request, "PC aufgeweckt", pc=hub.name or hub.pc_id)
         return {"ok": True, "status": hub.status}
 
@@ -516,7 +547,7 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         if hub.status != "online":
             raise HTTPException(status_code=409, detail="PC ist nicht online")
         code, data = await hub.agent_action(name, body)
-        if code == 200 and name in ("shutdown", "sleep", "restart"):
+        if code == 200 and name in ("shutdown", "sleep", "standby", "restart"):
             notifier.expect_power_action(hub.pc_id)         # dann keine „PC ist offline“-Meldung
         # Text der Zwischenablage nie ins Protokoll schreiben, nur die Länge
         detail = ", ".join((f"text={len(str(v))} Zeichen" if k == "text" else f"{k}={str(v)[:60]}") for k, v in (body or {}).items()) if isinstance(body, dict) else None

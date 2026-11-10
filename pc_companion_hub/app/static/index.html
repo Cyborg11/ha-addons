@@ -47,6 +47,11 @@
     <div id="offstats" class="offstats" hidden></div>
     <button id="wake" class="primary wakebtn">PC aufwecken</button>
     <div id="wakemsg"></div>
+    <div id="offpending" class="pendbox" hidden><span id="offpending_txt"></span><button id="offpending_cancel" class="linkbtn" type="button">Abbrechen</button></div>
+    <div id="offgames" class="offgames" hidden>
+      <h3>Aufwecken und starten</h3>
+      <div id="offgames_grid" class="stgrid"></div>
+    </div>
     <p class="hint" id="offhint">Läuft der PC, aber der Agent nicht (Absturz, Neustart ohne Anmeldung), hilft Aufwecken nicht – dann am PC anmelden oder den Agenten starten.</p>
     <button id="offhist_btn" class="linkbtn" type="button">Verlauf ansehen</button>
   </div>
@@ -59,6 +64,7 @@
     <h2>PC startet …</h2>
     <div class="bar wakebar"><i id="wakebar"></i></div>
     <div id="countdown"></div>
+    <div id="wakepending" class="pendbox" hidden><span id="wakepending_txt"></span><button id="wakepending_cancel" class="linkbtn" type="button">Abbrechen</button></div>
     <div class="hint" id="wakehint">Magic Packet gesendet. Windows braucht meist 30–60 Sekunden, bis der Agent antwortet.</div>
   </div>
 </section>
@@ -179,10 +185,12 @@
       <h3>Energie</h3>
       <div class="grid4">
         <button data-act="lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Sperren</button>
+        <button data-act="standby" data-feature="standby" hidden data-confirm="In den Energiesparmodus? Der PC lässt sich per Aufwecken-Knopf wieder starten und alles läuft sofort weiter."><svg viewBox="0 0 24 24"><path d="M4 7h6l-6 6h6M13 11h4l-4 4h4M17 5h3l-3 3h3"/></svg>Energiesparmodus</button>
         <button data-act="sleep" data-confirm="Ruhezustand jetzt starten?"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>Ruhezustand</button>
         <button data-act="restart" data-confirm="PC jetzt neu starten?" class="danger"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/></svg>Neustart</button>
         <button data-act="shutdown" data-confirm="PC jetzt herunterfahren?" class="danger"><svg viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>Herunterfahren</button>
       </div>
+      <p class="hint" data-feature="standby" hidden>Energiesparmodus: Aufwecken dauert Sekunden, Sitzung, Agent und Steam laufen sofort weiter. Aus Ruhezustand oder Herunterfahren dauert es länger (Add-on-Option <code>wake_mode</code>).</p>
     </div>
 
     <div class="panel pad">
@@ -358,6 +366,8 @@
   <button data-tab="steam" data-feature="steam" hidden><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10v5M5 12.5h5"/><circle cx="15.5" cy="11.5" r="1"/><circle cx="18" cy="14" r="1"/></svg><span>Spiele</span></button>
   <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><span>Dateien</span></button>
 </nav>
+
+<div id="launchtoast" class="toast" role="status" hidden></div>
 
 <div id="st_sheet" class="sheet" hidden>
   <div class="sheetbox" role="dialog" aria-modal="true" aria-labelledby="st_sheet_name">

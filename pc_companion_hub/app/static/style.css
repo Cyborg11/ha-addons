@@ -315,3 +315,12 @@ body.readonly .stctl{display:none!important}
 .dlitem .bar i.paused{background:var(--dim)}.dlitem .bar i.warn{background:var(--warn)}.dlitem .bar i.crit{background:var(--crit)}
 .dlwait{margin-bottom:12px;font-size:13px}#st_libs{margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
 .sheetbody .row{gap:8px}.sheetbody .row button{padding:0 14px;min-height:42px;font-size:14px}#st_sheet_msg{font-size:12px;margin-top:8px}
+
+/* ---- 0.18 Aufwecken und starten ---- */
+.pendbox{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:12px 0;padding:10px 14px;border:1px solid rgba(52,232,164,.35);border-radius:14px;background:rgba(52,232,164,.07);font-size:14px}
+.pendbox .linkbtn{padding:0;margin:0}
+.offgames{margin-top:16px;text-align:left}.offgames h3{margin:0 0 10px;text-align:center}
+.offgames .stgrid{grid-template-columns:repeat(3,1fr);gap:10px;margin-top:0}.offgames .gcap{font-size:11px}
+.toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:80;max-width:min(92vw,460px);padding:10px 16px;border-radius:14px;background:#0d141b;border:1px solid var(--line);color:var(--fg);font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.5);cursor:pointer}
+.toast.good{border-color:rgba(52,232,164,.55)}.toast.bad{border-color:rgba(255,93,108,.55);color:#ffd7db}
+body.readonly .offgames{display:none!important}

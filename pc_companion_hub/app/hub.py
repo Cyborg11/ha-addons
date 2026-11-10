@@ -11,12 +11,34 @@ import websockets
 EXPECTED_API_VERSION = 1
 WAKE_TIMEOUT_S = 120
 POLL_INTERVAL_S = 2.5
+# Aufwecken-Varianten (Option wake_mode, je PC einstellbar):
+#   standby: PC schläft im Energiesparmodus; Sitzung, Agent und Steam laufen nach dem Aufwecken sofort weiter.
+#   cold:    PC ist heruntergefahren (Autologin nötig); Windows muss booten, sich anmelden, der Agent und Steam starten.
+WAKE_MODES = {
+    "standby": {"timeout_s": 120, "launch_delay_s": 5},
+    "cold": {"timeout_s": 300, "launch_delay_s": 25},
+}
+LAUNCH_GRACE_S = 120          # so lange nach Ablauf der Wartezeit darf ein „Aufwecken und starten“ noch auf den Agenten warten
+LAUNCH_RETRY_S = 5            # Abstand der Startversuche, wenn der Agent (noch) nicht antwortet
+RESULT_SHOW_S = 120           # so lange meldet der Hub das Ergebnis eines Spielstarts an die Oberfläche
 
 
-def compute_status(online: bool, wake_started: float | None, now: float) -> str:
+def wake_params(opts: dict) -> tuple[str, int, int]:
+    """(Modus, Wartezeit bis der Agent antworten muss, Pause nach „online“ bis zum Spielstart) aus den Optionen."""
+    mode = opts.get("wake_mode") if opts.get("wake_mode") in WAKE_MODES else "standby"
+
+    def pick(key: str, lo: int, hi: int, default: int) -> int:
+        v = opts.get(key)
+        return v if isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi else default
+
+    base = WAKE_MODES[mode]
+    return mode, pick("wake_timeout_s", 30, 900, base["timeout_s"]), pick("launch_delay_s", 0, 180, base["launch_delay_s"])
+
+
+def compute_status(online: bool, wake_started: float | None, now: float, timeout_s: float = WAKE_TIMEOUT_S) -> str:
     if online:
         return "online"
-    if wake_started is not None and now - wake_started < WAKE_TIMEOUT_S:
+    if wake_started is not None and now - wake_started < timeout_s:
         return "waking"
     return "offline"
 
@@ -45,6 +67,10 @@ class Hub:
         self.last_seen: float | None = None   # Zeitpunkt der letzten erfolgreichen Statusprüfung (Unix-Zeit)
         self.last_stats: dict | None = None   # letzte Kennzahlen vor dem Ausfall (für die Offline-Seite)
         self.wake_started: float | None = None
+        self.wake_mode, self.wake_timeout, self.launch_delay = wake_params(opts)
+        self.pending_launch: dict | None = None   # {"appid","name","since","online_since","next_try"} – Spiel, das nach dem Aufwecken startet
+        self.launch_result: dict | None = None    # {"appid","name","ok","message","at"} des letzten Versuchs
+        self.on_launch = None                     # Rückruf(hub, result) beim Ende eines wartenden Spielstarts (Protokoll)
         self.clients: set = set()
         self.on_snapshot = None               # Rückruf(pc_id, snapshot), z. B. für den Langzeitverlauf
         self.on_status = None                 # Rückruf(hub) nach jeder Statusprüfung
@@ -54,7 +80,7 @@ class Hub:
     def message(self) -> dict:
         left = None
         if self.status == "waking" and self.wake_started is not None:
-            left = max(0, round(WAKE_TIMEOUT_S - (time.time() - self.wake_started)))
+            left = max(0, round(self.wake_timeout - (time.time() - self.wake_started)))
         return {
             "pc": self.pc_id,
             "name": self.name,
@@ -64,7 +90,10 @@ class Hub:
             "api_expected": EXPECTED_API_VERSION,
             "host": self.agent_host,
             "waking_left": left,
-            "waking_total": WAKE_TIMEOUT_S,
+            "waking_total": self.wake_timeout,
+            "wake_mode": self.wake_mode,
+            "pending_launch": self.public_pending(),
+            "launch_result": self.public_result(),
             "last_seen": self.last_seen,
             "last_stats": self.last_stats,
             "wol_configured": bool(self.opts.get("pc_mac")),
@@ -97,6 +126,78 @@ class Hub:
         if self.status == "offline":
             self.status = "waking"
 
+    # --- Aufwecken und starten ---------------------------------------------
+    def _now(self) -> float:
+        return time.time()
+
+    @property
+    def launch_expiry(self) -> int:
+        return self.wake_timeout + LAUNCH_GRACE_S
+
+    def queue_launch(self, appid: int, name: str) -> None:
+        self.pending_launch = {"appid": appid, "name": name, "since": self._now(), "online_since": None, "next_try": 0.0}
+        self.launch_result = None
+
+    def cancel_launch(self, appid: int | None = None) -> bool:
+        p = self.pending_launch
+        if not p or (appid is not None and p["appid"] != appid):
+            return False
+        self.pending_launch = None
+        return True
+
+    def public_pending(self) -> dict | None:
+        p = self.pending_launch
+        if not p:
+            return None
+        return {"appid": p["appid"], "name": p["name"], "left_s": max(0, round(self.launch_expiry - (self._now() - p["since"])))}
+
+    def public_result(self) -> dict | None:
+        r = self.launch_result
+        if not r or self._now() - r["at"] > RESULT_SHOW_S:
+            return None
+        return r
+
+    def _finish_launch(self, ok: bool, message: str) -> None:
+        p = self.pending_launch
+        self.pending_launch = None
+        if not p:
+            return
+        self.launch_result = {"appid": p["appid"], "name": p["name"], "ok": ok, "message": message, "at": self._now()}
+        if self.on_launch:
+            try:
+                self.on_launch(self, self.launch_result)
+            except Exception:
+                pass
+
+    async def _launch_tick(self) -> None:
+        """Startet das vorgemerkte Spiel, sobald der PC online ist, Steam gemeldet wird und die Pause (launch_delay) vorbei ist."""
+        p = self.pending_launch
+        if not p:
+            return
+        now = self._now()
+        if now - p["since"] > self.launch_expiry:
+            self._finish_launch(False, "Der PC hat sich nicht rechtzeitig gemeldet. Läuft er, aber der Agent nicht (z. B. keine Anmeldung nach dem Start), "
+                                       "am PC anmelden oder Autologin bzw. Energiesparmodus nutzen.")
+            return
+        if self.status != "online" or "steam" not in self.features:
+            p["online_since"] = None
+            return
+        if p["online_since"] is None:
+            p["online_since"] = now
+        if now - p["online_since"] < self.launch_delay or now < p["next_try"]:
+            return
+        code, content, _ = await self.agent_request("POST", f"/api/steam/games/{p['appid']}/launch", None, {"force": False}, 20.0)
+        if code == 200:
+            self._finish_launch(True, "Spiel gestartet.")
+        elif code in (400, 404, 409):
+            try:
+                detail = json.loads(content).get("detail")
+            except Exception:
+                detail = None
+            self._finish_launch(False, str(detail or f"Start abgelehnt ({code})")[:200])
+        else:
+            p["next_try"] = now + LAUNCH_RETRY_S               # Agent/Steam noch nicht bereit: später nochmal
+
     # --- Agent-Anbindung ---------------------------------------------------
     async def _relay(self) -> None:
         url = f"{self.ws_url}?token={self.opts.get('agent_token', '')}"
@@ -128,7 +229,11 @@ class Hub:
         if online:
             self.wake_started = None
             self.last_seen = time.time()
-        self.status = compute_status(online, self.wake_started, time.time())
+        self.status = compute_status(online, self.wake_started, time.time(), self.wake_timeout)
+        try:
+            await self._launch_tick()
+        except Exception:
+            pass
         if self.on_status:
             try:
                 self.on_status(self)
