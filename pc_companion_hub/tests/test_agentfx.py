@@ -231,3 +231,11 @@ def test_steam_griddb_nsfw_parameter_is_validated_and_passed_on(client):
     for bad in ("any", "1", "yes", "x"):
         assert client.get("/api/steam/griddb/730/cover?nsfw=" + bad, headers=MASTER).status_code == 400
     assert len(client.calls) == n
+
+
+def test_steam_relays_accept_shortcut_ids_above_two_to_the_31(client):
+    a = 3_333_333_333                                                                                   # Nicht-Steam-Spiele tragen das hohe Bit
+    assert client.post(f"/api/steam/games/{a}/launch", headers=MASTER).status_code == 200
+    assert client.calls[-1]["path"] == f"/api/steam/games/{a}/launch"
+    assert client.get(f"/api/steam/art/{a}/cover", headers=MASTER).status_code == 200
+    assert client.post(f"/api/steam/games/{2 ** 32}/launch", headers=MASTER).status_code == 400

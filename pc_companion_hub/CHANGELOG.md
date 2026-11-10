@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.0
+Steam-Fernsteuerung, Teil 5: Nicht-Steam-Spiele (braucht den Agenten mit Phase 9.5).
+- Eigene Verknüpfungen aus Steam („Nicht-Steam-Spiel hinzufügen“) erscheinen im Tab „Spiele“ (Schild „Eigenes“) und lassen sich starten und, sofern sie ein eigenes Programm sind, beenden. Shells und Skript-Interpreter lassen sich bewusst nicht gezielt beenden.
+- Für sie gibt es keine SteamGridDB-Vorschläge (die Oberfläche sagt das); eigene Bilder im `grid`-Ordner werden angezeigt.
+
 ## 0.19.0
 Steam-Fernsteuerung, Teil 2: Bilder ändern (braucht den Agenten mit Phase 9.2; Vorschläge nur mit `steam.griddb_key` in der `config.yaml` des Agenten).
 - **Bilder ändern** in der Detailansicht eines Spiels: Reiter Cover, Header, Hero und Logo, Vorschläge von SteamGridDB als Raster (mit „Mehr laden“), Antippen zeigt eine Vorschau, „Übernehmen“ speichert das Bild beim Spiel auf dem PC. „Auf Standard zurücksetzen“ entfernt das eigene Bild (geht auch ohne Schlüssel).
