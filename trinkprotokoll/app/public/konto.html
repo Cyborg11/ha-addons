@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#edf3f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1719" media="(prefers-color-scheme: dark)">
+<title>Konto – Trinkprotokoll</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Trinkprotokoll</p>
+      <h1>Konto</h1>
+    </div>
+    <a class="ghost" href="./">Zurück</a>
+  </header>
+  <p class="notice" id="msg" role="status" hidden></p>
+
+  <section class="card pad">
+    <p class="lab">Angemeldet als</p>
+    <p class="mid" id="meName">–</p>
+    <p class="sub" id="meRole"></p>
+    <button type="button" class="ghost wide" id="logout">Abmelden</button>
+  </section>
+
+  <h2 class="h2">Mein Passwort</h2>
+  <form class="card form" id="pwForm" novalidate>
+    <div class="field">
+      <label for="pw-cur">Aktuelles Passwort</label>
+      <input id="pw-cur" type="password" autocomplete="current-password">
+    </div>
+    <div class="field">
+      <label for="pw-new">Neues Passwort (mindestens 8 Zeichen)</label>
+      <input id="pw-new" type="password" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label for="pw-new2">Neues Passwort wiederholen</label>
+      <input id="pw-new2" type="password" autocomplete="new-password">
+    </div>
+    <button class="primary" type="submit">Passwort ändern</button>
+  </form>
+
+  <section id="admin" hidden>
+    <h2 class="h2 gap">Benutzer</h2>
+    <p class="hint">Admin verwaltet Benutzer und darf erfassen. Mitglied darf erfassen. „Nur ansehen“ eignet sich zum Beispiel für Großeltern.</p>
+    <ul class="rows" id="ulist"></ul>
+    <h2 class="h2 gap">Benutzer hinzufügen</h2>
+    <form class="card form" id="addForm" novalidate>
+      <div class="field">
+        <label for="nu-name">Name</label>
+        <input id="nu-name" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="nu-pw">Startpasswort (mindestens 8 Zeichen)</label>
+        <input id="nu-pw" type="password" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="nu-role">Rolle</label>
+        <select id="nu-role">
+          <option value="member">Mitglied</option>
+          <option value="viewer">Nur ansehen</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button class="primary" type="submit">Benutzer anlegen</button>
+    </form>
+
+    <h2 class="h2 gap">Babys</h2>
+    <p class="hint">Mit mehreren Babys lässt sich zum Beispiel die Trinkmenge eines Geschwisterkinds vergleichen. Oben in der App erscheint dann ein Umschalter. Das erste Baby lässt sich nicht entfernen.</p>
+    <ul class="rows" id="blist"></ul>
+    <h2 class="h2 gap">Baby hinzufügen</h2>
+    <form class="card form" id="babyForm" novalidate>
+      <div class="field">
+        <label for="nb-name">Name</label>
+        <input id="nb-name" type="text" maxlength="40" autocomplete="off">
+      </div>
+      <button class="primary" type="submit">Baby hinzufügen</button>
+    </form>
+
+    <h2 class="h2 gap">Sicherung herunterladen</h2>
+    <p class="hint">Lädt alle Einträge aller Babys als Datei herunter, zum Beispiel für den Umzug auf einen anderen Server. Die Datei enthält keine Benutzer und keine Passwörter.</p>
+    <p><a class="ghost" href="/api/export.json" download>Sicherung herunterladen</a></p>
+
+    <h2 class="h2 gap">Daten importieren</h2>
+    <p class="hint">Liest Einträge aus einer Importdatei (.json) in ein Baby ein. Schon vorhandene Einträge werden nicht doppelt angelegt, du kannst die Datei also bedenkenlos nochmal einlesen. Auch eine komplette Sicherung (Datei „trinkprotokoll-….json“ aus dem Export) lässt sich hier einlesen, zum Beispiel beim Umzug auf einen neuen Server.</p>
+    <form class="card form" id="impForm" novalidate>
+      <div class="field">
+        <label for="imp-baby">Importieren in</label>
+        <select id="imp-baby"></select>
+      </div>
+      <div class="field">
+        <label for="imp-file">Datei</label>
+        <input id="imp-file" type="file" accept=".json,application/json">
+      </div>
+      <button class="primary" type="submit">Importieren</button>
+    </form>
+  </section>
+</div>
+<script src="konto.js"></script>
+</body>
+</html>
