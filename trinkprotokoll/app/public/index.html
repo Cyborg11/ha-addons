@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#edf3f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1719" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Trinkprotokoll</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow" id="who">Unser Baby</p>
+      <h1>Trinkprotokoll</h1>
+    </div>
+    <div class="hb"><button type="button" class="ghost" id="btnSettings">Einstellungen</button><a class="ghost" href="konto.html">Konto</a></div>
+  </header>
+  <div class="babies" id="babies" hidden></div>
+  <p class="notice" id="notice" hidden></p>
+
+  <section data-view="erfassen" id="v-erfassen">
+    <div class="card status">
+      <div>
+        <p class="lab">Letzte Mahlzeit</p>
+        <p class="big" id="lastFeed">Noch nichts erfasst</p>
+        <p class="sub" id="lastFeedSub"></p>
+      </div>
+      <div class="side">
+        <p class="lab">Ø Abstand heute</p>
+        <p class="mid" id="gapToday">–</p>
+      </div>
+    </div>
+    <button type="button" class="banner" id="timerBanner" hidden></button>
+    <button type="button" class="banner sleepb" id="sleepBanner" hidden></button>
+    <div class="grid" id="actions"></div>
+    <h2 class="h2">Heute</h2>
+    <dl class="card strip" id="today"></dl>
+    <p class="hint" id="emptyHint" hidden>Tippe oben auf „Stillen“ oder „Flasche“, um die erste Mahlzeit festzuhalten. Alle Geräte, die sich anmelden, sehen dieselben Einträge.</p>
+  </section>
+
+  <section data-view="verlauf" id="v-verlauf" hidden>
+    <div id="hist"></div>
+    <button type="button" class="ghost wide" id="moreDays" hidden>Weitere Tage anzeigen</button>
+  </section>
+
+  <section data-view="statistik" id="v-statistik" hidden>
+    <fieldset class="seg range">
+      <legend>Zeitraum</legend>
+      <div class="seg-row">
+        <input type="radio" name="range" id="r7" value="7" checked><label for="r7">7 Tage</label>
+        <input type="radio" name="range" id="r14" value="14"><label for="r14">14 Tage</label>
+        <input type="radio" name="range" id="r30" value="30"><label for="r30">30 Tage</label>
+      </div>
+    </fieldset>
+    <p class="empty" id="statsEmpty" hidden>In diesem Zeitraum gibt es noch keine Einträge. Sobald du etwas erfasst, erscheinen hier Grafiken.</p>
+    <div id="statsBody">
+      <dl class="kpis" id="kpis"></dl>
+      <p class="foot" id="kpiFoot"></p>
+      <article class="card chart"><h2>Mahlzeiten pro Tag</h2><p class="sub" id="sub-meals"></p><div class="legend" id="lg-meals"></div><div class="plot" id="ch-meals"></div></article>
+      <article class="card chart"><h2>Flaschenmenge pro Tag</h2><p class="sub" id="sub-ml"></p><div class="plot" id="ch-ml"></div></article>
+      <article class="card chart" id="cmpCard" hidden><h2 id="cmpTitle">Vergleich</h2><div class="bchips" id="cmpPick" hidden></div><p class="sub" id="sub-cmp"></p><div class="legend" id="lg-cmp"></div><div class="plot" id="ch-cmp"></div><p class="foot" id="cmpFoot"></p><details class="cmpdet" id="cmpDet" hidden><summary>Wochenwerte</summary><div class="tbl-wrap"><table id="tbl-cmp"></table></div></details></article>
+      <article class="card chart" id="sleepCard" hidden><h2>Schlaf pro Tag</h2><p class="sub" id="sub-sleep"></p><div class="legend" id="lg-sleep"></div><div class="plot" id="ch-sleep"></div><p class="foot">Die Nacht zählt zum Tag des Aufwachens.</p></article>
+      <article class="card chart" id="healthCard" hidden><h2>Gesundheit</h2><p class="sub" id="sub-health"></p><div class="legend" id="lg-health"></div><div class="plot" id="ch-health"></div><ul class="medlist" id="medList" hidden></ul></article>
+      <article class="card chart"><h2>Stillzeit pro Tag</h2><p class="sub" id="sub-min"></p><div class="plot" id="ch-min"></div></article>
+      <article class="card chart"><h2>Tagesrhythmus</h2><p class="sub">Jeder Punkt ist eine Mahlzeit, von Mitternacht bis Mitternacht.</p><div class="legend" id="lg-rhythm"></div><div class="plot" id="ch-rhythm"></div></article>
+      <article class="card chart"><h2>Windeln pro Tag</h2><p class="sub" id="sub-dia"></p><div class="legend" id="lg-dia"></div><div class="plot" id="ch-dia"></div></article>
+      <article class="card chart"><h2>Gewicht</h2><p class="sub" id="sub-w"></p><div class="plot" id="ch-w"></div></article>
+      <article class="card chart" hidden><h2>Körperlänge</h2><p class="sub" id="sub-l"></p><div class="plot" id="ch-l"></div></article>
+      <article class="card chart" hidden><h2>Kopfumfang</h2><p class="sub" id="sub-h"></p><div class="plot" id="ch-h"></div></article>
+      <details class="card"><summary>Tageswerte als Tabelle</summary><div class="tbl-wrap"><table id="tbl"></table></div></details>
+      <button type="button" class="ghost wide" id="btnCsv" hidden>Letzte 30 Tage als CSV speichern</button>
+    </div>
+  </section>
+</div>
+
+<nav class="nav" aria-label="Bereiche"><div class="nav-in">
+  <a href="#erfassen" data-go="erfassen">Erfassen</a>
+  <a href="#verlauf" data-go="verlauf">Verlauf</a>
+  <a href="#statistik" data-go="statistik">Statistik</a>
+</div></nav>
+
+<div class="back" id="sheetBack" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head"><h2 id="sheetTitle"></h2><button type="button" class="ghost" id="sheetClose">Schließen</button></div>
+    <form id="sheetForm" novalidate>
+      <div id="sheetFields"></div>
+      <p class="err" id="sheetErr" role="alert" hidden></p>
+      <button type="submit" class="primary" id="sheetSave">Speichern</button>
+    </form>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<div id="tip" role="tooltip" hidden></div>
+<script src="adapter.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

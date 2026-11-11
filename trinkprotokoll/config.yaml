@@ -1,0 +1,26 @@
+name: "Trinkprotokoll"
+description: "Trinkprotokoll fürs Baby mit Statistik, Wachstumskurven und Benutzerverwaltung"
+version: "1.4.0"
+slug: "trinkprotokoll"
+init: false
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+ports:
+  3000/tcp: 3000
+ports_description:
+  3000/tcp: "Web-Oberfläche (im Heimnetz und über Tailscale)"
+webui: "http://[HOST]:[PORT:3000]/"
+watchdog: "http://[HOST]:[PORT:3000]/healthz"
+options:
+  admin_user: "admin"
+  admin_password: ""
+  benutzer_zuruecksetzen: false
+  im_dashboard_einbetten: false
+schema:
+  admin_user: "str"
+  admin_password: "password?"
+  benutzer_zuruecksetzen: "bool"
+  im_dashboard_einbetten: "bool"
