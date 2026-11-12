@@ -156,6 +156,7 @@
     box.textContent = "";
     for (const [k, v] of rows) { const d = document.createElement("div"), a = document.createElement("span"), b = document.createElement("b"); a.textContent = k; b.textContent = v; d.append(a, b); box.append(d); }
     $("st_launch").hidden = isRun; $("st_launch").disabled = !g.launchable;
+    $("st_update").hidden = !(features.includes("steam_update") && !g.non_steam && !isRun && g.state === "update_required");
     $("st_stop").hidden = !isRun;
     const sk = g.appid + "|" + g.art_ver;                            // auch ein getauschtes Cover im Detailblatt neu laden
     if (sheetArt !== sk) {
@@ -186,6 +187,17 @@
     try { const d = await call("POST", "api/steam/games/" + appid + "/stop"); out.textContent = "Beendet (" + d.processes + " Prozesse)."; }
     catch (e) { out.textContent = e.message; }
   }
+  $("st_update").onclick = async () => {
+    const g = games.find(x => x.appid === openId);
+    if (!g) return;
+    const msg = $("st_sheet_msg");
+    msg.textContent = "Starte das Update …";
+    try {
+      await call("POST", "api/steam/games/" + g.appid + "/update");
+      msg.textContent = "Steam prüft die Dateien und lädt das Update. Den Fortschritt siehst du unter „Downloads & Speicher“.";
+      setTimeout(async () => { await load(true); paintGrid(); if (!$("st_sheet").hidden) paintSheet(); if ($("st_dlbox").open) loadDownloads(); }, 4000);
+    } catch (e) { msg.textContent = e.message; }
+  };
   $("st_launch").onclick = () => { const g = games.find(x => x.appid === openId); if (g) launch(g.appid, g.name, false); };
   $("st_stop").onclick = () => { const g = games.find(x => x.appid === openId); if (g) stopGame(g.appid, g.name); };
 
@@ -241,6 +253,10 @@
     if (dlbox.open && !view.hidden) { loadDownloads(); dlTimer = setInterval(() => { if (!document.hidden) loadDownloads(); }, 10000); }
   }
   dlbox.addEventListener("toggle", dlWatch);
+  $("st_dl_open").onclick = async () => {
+    try { await call("POST", "api/steam/open/downloads"); $("st_dl_list").prepend(Object.assign(document.createElement("div"), { className: "muted", textContent: "Die Downloads-Seite ist am PC geöffnet." })); }
+    catch (e) { $("st_dl_list").prepend(Object.assign(document.createElement("div"), { className: "muted", textContent: e.message })); }
+  };
 
   /* ---- Bilder ändern (SteamGridDB) ---- */
   const ART_KINDS = [["cover", "Cover", "2/3"], ["header", "Header", "920/430"], ["hero", "Hero", "96/31"], ["logo", "Logo", "16/9"]];
