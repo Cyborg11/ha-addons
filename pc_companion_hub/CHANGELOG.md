@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.0
+Updates anstoßen (braucht den Agenten mit Phase „Update laden“, Feature `steam_update`).
+- **Update laden:** In der Detailansicht eines Spiels mit „Update“-Schild startet der Knopf „Update laden“ die Dateiprüfung und das Update in Steam, ohne das Spiel zu starten. Am echten PC getestet: ein Update von rund 300 MB war nach etwa 30 Sekunden fertig, ohne Dialog.
+- **Downloads am PC öffnen:** Knopf unter „Downloads & Speicher“ öffnet am PC die Downloads-Seite von Steam.
+- Während Steam ein Spiel prüft oder aktualisiert, steht es jetzt als „Lädt“ da (der Agent liest dafür das Steam-Flag in der Registry).
+
 ## 0.20.1
 - **Fix:** Ein getauschtes Cover (Bilder ändern, zurücksetzen) erscheint sofort in der Spiele-Liste und im Detailblatt. Bisher hielt der Browser das alte Bild bis zu 24 Stunden fest, weil die Bildadresse keine Version trug.
 

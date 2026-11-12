@@ -508,6 +508,12 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
             record(request, "Spielstart nach Aufwecken abgebrochen", pc=hub.name or hub.pc_id, detail=f"AppID {appid}")
         return {"ok": True, "cancelled": cancelled}
 
+    @app.post("/api/steam/games/{appid}/update", dependencies=[Depends(require_write)])
+    async def steam_update(appid: int, request: Request, hub: Hub = Depends(get_hub)):
+        steam_appid(appid)
+        return await relay(request, hub, "POST", f"/api/steam/games/{appid}/update", what="Update angestoßen",
+                           detail=await steam_label(hub, appid), timeout=20.0)
+
     @app.post("/api/steam/games/{appid}/stop", dependencies=[Depends(require_write)])
     async def steam_stop(appid: int, request: Request, hub: Hub = Depends(get_hub)):
         steam_appid(appid)

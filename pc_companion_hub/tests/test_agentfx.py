@@ -239,3 +239,18 @@ def test_steam_relays_accept_shortcut_ids_above_two_to_the_31(client):
     assert client.calls[-1]["path"] == f"/api/steam/games/{a}/launch"
     assert client.get(f"/api/steam/art/{a}/cover", headers=MASTER).status_code == 200
     assert client.post(f"/api/steam/games/{2 ** 32}/launch", headers=MASTER).status_code == 400
+
+
+def test_steam_update_needs_write_rights_is_validated_and_logged(client):
+    v = {"Authorization": "Bearer " + view_token(client)}
+    n = len(client.calls)
+    assert client.post("/api/steam/games/440/update", headers=v).status_code == 403
+    assert client.post("/api/steam/games/440/update").status_code == 401
+    assert client.post("/api/steam/games/0/update", headers=MASTER).status_code == 400
+    assert client.post("/api/steam/games/99999999999/update", headers=MASTER).status_code == 400
+    assert len(client.calls) == n
+    assert client.post("/api/steam/games/730/update?pc=ki-pc", headers=MASTER).status_code == 200
+    last = client.calls[-1]
+    assert last["pc"] == "ki-pc" and last["path"] == "/api/steam/games/730/update" and last["method"] == "POST"
+    raw = json.dumps(client.get("/api/audit", headers=MASTER).json(), ensure_ascii=False)
+    assert "Update angestoßen" in raw and "Counter-Strike 2 (730)" in raw
