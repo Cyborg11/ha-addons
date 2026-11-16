@@ -71,6 +71,7 @@ class Hub:
         self.pending_launch: dict | None = None   # {"appid","name","since","online_since","next_try"} – Spiel, das nach dem Aufwecken startet
         self.launch_result: dict | None = None    # {"appid","name","ok","message","at"} des letzten Versuchs
         self.on_launch = None                     # Rückruf(hub, result) beim Ende eines wartenden Spielstarts (Protokoll)
+        self.scene_run: dict | None = None        # laufende oder zuletzt beendete Szene (siehe scenes.py)
         self.clients: set = set()
         self.on_snapshot = None               # Rückruf(pc_id, snapshot), z. B. für den Langzeitverlauf
         self.on_status = None                 # Rückruf(hub) nach jeder Statusprüfung
@@ -94,6 +95,7 @@ class Hub:
             "wake_mode": self.wake_mode,
             "pending_launch": self.public_pending(),
             "launch_result": self.public_result(),
+            "scene_run": self.public_scene_run(),
             "last_seen": self.last_seen,
             "last_stats": self.last_stats,
             "wol_configured": bool(self.opts.get("pc_mac")),
@@ -144,6 +146,13 @@ class Hub:
             return False
         self.pending_launch = None
         return True
+
+    def public_scene_run(self) -> dict | None:
+        """Szenen-Fortschritt für die Oberfläche; eine beendete Szene bleibt 5 Minuten sichtbar."""
+        r = self.scene_run
+        if not r or (r["ended"] and self._now() - r["ended"] > 300):
+            return None
+        return {k: r[k] for k in ("id", "name", "state", "step", "steps", "started", "ended", "error")}
 
     def public_pending(self) -> dict | None:
         p = self.pending_launch

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.0
+Phase 10.2: Szenen.
+- **Szenen** führen mehrere Schritte nacheinander aus, z. B. „Zocken“: ComfyUI beenden → Spiel starten → Home-Assistant-Szene → Lautstärke setzen. Schritt-Typen: Programm starten/beenden, Spiel starten/beenden, PC-Aktion (Sperren, Energiesparmodus, Bildschirm aus, Lautstärke …), Energie-Plan, Home-Assistant-Szene, Warten, Nachricht senden.
+- **Bearbeiten in der Oberfläche:** Steuerung → Szenen mit Editor (Schritte per Auswahl hinzufügen, verschieben, löschen). Gespeichert im Hub.
+- **Schnellstart** als Knöpfe auf dem Dashboard; während der Ausführung zeigt eine Karte jeden Schritt („Schritt 2 von 4“) mit Abbrechen. Ein Fehler stoppt die Szene und zeigt, welcher Schritt scheiterte.
+- Ist der PC aus, weckt die Szene ihn zuerst (abschaltbar je Szene) und wartet wie bei „Aufwecken und starten“, bis Agent und Steam bereit sind.
+- Nur mit Vollzugriff; jede Ausführung und jede Änderung steht im Protokoll. Die Schritte nutzen feste Bausteine, keine freien Befehle.
+
 ## 0.22.1
 - Der Knopf heißt jetzt „Update laden (prüft Dateien)“. Steam bietet keinen Befehl, der nur das Update lädt (am echten PC mit `steam://validate` und `steam://install` ausprobiert: nur `validate` startet etwas); es prüft zuerst alle Dateien. Bei Spielen ab 20 GB steht dazu ein Hinweis, dass das einige Minuten dauern kann.
 - Wer das Prüfen vermeiden will: in Steam unter Eigenschaften → Updates „Dieses Spiel immer aktuell halten“ wählen.

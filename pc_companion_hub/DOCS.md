@@ -116,6 +116,13 @@ Das Master-Dashboard aus ai-core lauscht laut `master.json` auf der Tailscale-Ad
 
 BIOS „Wake on LAN“ aktivieren · Netzwerkadapter: „Nur Magic Packet“ · Windows-Schnellstart aus · LAN-Kabel · MAC notieren.
 
+## Szenen
+
+Unter **Steuerung → Szenen** legst du Abfolgen an („Zocken“, „Über Nacht rendern“). Jeder Schritt ist ein fester Baustein: Programm/Spiel starten oder beenden, PC-Aktion, Energie-Plan,
+Home-Assistant-Szene (`scene.<name>`, braucht die Home-Assistant-Anbindung des Add-ons), Warten (bis 300 s), Nachricht senden. Die Szenen liegen im Hub (`/data/scenes.json`), höchstens 20 mit je 30 Schritten.
+Beim Ausführen zeigt eine Karte den Fortschritt; schlägt ein Schritt fehl, stoppt die Szene (die übrigen Schritte werden übersprungen). „PC bei Bedarf aufwecken“ sendet das Magic Packet und wartet auf den Agenten
+(Zeiten wie bei „Aufwecken und starten“). Nur Geräte mit Vollzugriff dürfen Szenen sehen und ausführen; Nur-Ansicht-Geräte sehen sie nicht auf dem Dashboard.
+
 ## Aufwecken und starten (Steam)
 
 Ist der PC aus, zeigt die Offline-Seite unter dem Aufwecken-Knopf die zuletzt gespielten Spiele (die Liste merkt sich der Browser, sobald der Tab „Spiele“ einmal geöffnet war). Antippen weckt den PC und merkt das Spiel vor; sobald der Agent antwortet und Steam meldet, wartet der Hub kurz (`launch_delay_s`) und startet es. Auf der Warte-Seite steht „Startet danach: …“ mit Abbrechen, am Ende kommt eine Meldung (und ein Protokolleintrag). Schlägt der Start fehl oder meldet sich der PC nicht rechtzeitig, steht der Grund dort. Das setzt `mac` (Wake-on-LAN) voraus.
