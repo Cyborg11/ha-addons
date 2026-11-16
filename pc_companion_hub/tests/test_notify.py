@@ -184,3 +184,110 @@ def test_endpoints(tmp_path, monkeypatch):
         assert c.get("/api/notify", headers=auth).json()["configured"] is False
         r = c.post("/api/notify/test", headers=auth)
         assert r.status_code == 502 and "notify_service" in r.json()["detail"]
+
+
+# ---- Benachrichtigungen mit Aktionen (Phase 10.3) ----
+BASE = "https://pc.example.org"
+
+
+def run_actions(opts, steps):
+    """Wie run(), aber die Test-Sendefunktion nimmt Aktionen entgegen."""
+    sent = []
+
+    async def fake_send(title, message, tag=None, actions=None):
+        sent.append((title, message, tag, actions))
+        return True, "ok"
+
+    async def go():
+        n = notify.Notifier(opts, fake_send)
+        await steps(n)
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+
+    asyncio.run(go())
+    return sent
+
+
+def test_clean_public_url_accepts_only_plain_http_addresses():
+    assert notify.clean_public_url(" https://pc.example.org/ ") == BASE and notify.clean_public_url("http://192.168.1.5:8099/#x") == "http://192.168.1.5:8099"
+    for bad in (None, "", 5, "javascript:alert(1)", "ftp://x", "https://a b", 'https://x"><script>', "pc.example.org"):
+        assert notify.clean_public_url(bad) is None
+
+
+def test_without_public_url_messages_stay_plain_text_with_the_old_call(clock):
+    async def steps(n):
+        n.on_snapshot("pc", "A", snap(job("running")))
+        n.on_snapshot("pc", "A", snap(job("done")))
+
+    sent = run({}, steps)                                              # run() benutzt eine Sendefunktion OHNE Aktionsparameter: darf nicht brechen
+    assert len(sent) == 1 and sent[0][0] == "KI-Job fertig"
+
+
+def test_job_done_gets_standby_and_gallery_buttons_with_deep_links(clock):
+    async def steps(n):
+        n.on_snapshot("gaming-pc", "Gaming-PC", snap(job("running")))
+        n.on_snapshot("gaming-pc", "Gaming-PC", snap(job("done")))
+
+    sent = run_actions({"public_url": BASE + "/"}, steps)
+    assert len(sent) == 1 and sent[0][0] == "KI-Job fertig"
+    assert sent[0][3] == [{"action": "URI", "title": "Energiesparmodus", "uri": BASE + "/#do=standby&pc=gaming-pc"},
+                          {"action": "URI", "title": "Galerie", "uri": BASE + "/#do=tab:gallery&pc=gaming-pc"}]
+
+
+def test_offline_and_online_and_error_buttons(clock):
+    async def steps(n):
+        n.on_status("pc", "A", "online"); clock.t += 25; n.on_status("pc", "A", "online")
+        n.on_status("pc", "A", "offline"); clock.t += 25; n.on_status("pc", "A", "offline")
+        n.on_status("pc", "A", "online"); clock.t += 25; n.on_status("pc", "A", "online")
+        n.on_snapshot("pc", "A", snap(job("running")))
+        n.on_snapshot("pc", "A", snap(job("error", message="kaputt")))
+
+    sent = run_actions({"public_url": BASE}, steps)
+    by = {s[0]: [a["title"] + "=" + a["uri"].split("#do=")[1] for a in s[3]] for s in sent}
+    assert by["PC ist offline"] == ["Aufwecken=wake&pc=pc"] and by["PC ist online"] == ["Dashboard=tab:dash&pc=pc"]
+    assert by["KI-Job fehlgeschlagen"] == ["Dashboard=tab:dash&pc=pc"]
+
+
+def test_hot_gpu_offers_to_cancel_the_running_job_only_when_one_runs(clock):
+    async def hot(n, with_job):
+        if with_job:
+            n.on_snapshot("pc", "A", snap(job("running", jid="job-7"), temp=90))
+        n.on_snapshot("pc", "A", snap(temp=90)); clock.t += 70
+        n.on_snapshot("pc", "A", snap(temp=90))
+
+    async def with_job(n):
+        await hot(n, True)
+
+    async def without(n):
+        await hot(n, False)
+
+    a = run_actions({"public_url": BASE}, with_job)
+    assert [x["title"] for x in a[0][3]] == ["Job abbrechen", "Dashboard"] and a[0][3][0]["uri"].endswith("#do=cancel-job:job-7&pc=pc")
+    clock.t += 10_000
+    b = run_actions({"public_url": BASE}, without)
+    assert [x["title"] for x in b[0][3]] == ["Dashboard"]
+
+
+def test_links_are_escaped_and_never_exceed_three_buttons(clock):
+    n = notify.Notifier({"public_url": BASE}, None)
+    link = n.link("pc/../x y", "tab:dash")
+    assert link == BASE + "/#do=tab:dash&pc=pc%2F..%2Fx%20y"
+    assert " " not in link and "<" not in link and link.count("#") == 1
+    acts = n._actions("pc", [("a", "x"), ("b", "y"), ("c", "z"), ("d", "w")])
+    assert len(acts) == notify.MAX_ACTIONS == 3
+    assert notify.Notifier({}, None)._actions("pc", [("a", "x")]) is None
+
+
+def test_ha_notifier_sends_actions_and_click_target():
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.read())
+        return httpx.Response(200, json=[])
+
+    ha = notify.HaNotifier("notify.mobile_app_x", "tok", "http://supervisor/core/api", httpx.MockTransport(handler))
+    acts = [{"action": "URI", "title": "Aufwecken", "uri": BASE + "/#do=wake&pc=pc"}]
+    assert asyncio.run(ha.send("PC ist offline", "A", "t1", acts))[0] is True
+    data = seen["body"]["data"]
+    assert data["tag"] == "t1" and data["actions"] == acts and data["url"] == BASE + "/" and data["clickAction"] == BASE + "/"
+    assert asyncio.run(ha.send("x", "y", "t2"))[0] is True and seen["body"]["data"] == {"tag": "t2"}      # ohne Aktionen wie bisher

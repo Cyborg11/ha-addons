@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.24.0
+Phase 10.3: Benachrichtigungen mit Aktionen.
+- Die Home-Assistant-Meldungen bekommen **Knöpfe** (Android zeigt sie unter der Meldung; Tippen auf die Meldung öffnet die PWA): *KI-Job fertig* → „Energiesparmodus“ und „Galerie“, *GPU sehr heiß* → „Job abbrechen“ (wenn ein Job läuft) und „Dashboard“, *PC ist offline* → „Aufwecken“, *PC ist online* → „Dashboard“.
+- Die Knöpfe sind Deep-Links in die PWA (`<public_url>/#do=…`). Die PWA fragt **vor jeder Aktion einmal nach** („Energiesparmodus jetzt starten?“) und führt sie nur mit Vollzugriff aus; Nur-Ansicht-Geräte können nur Reiter öffnen. Keine Home-Assistant-Automationen nötig.
+- Voraussetzung: Die Add-on-Option `public_url` ist gesetzt (sie wird schon für die Kopplungslinks genutzt). Ohne sie bleiben die Meldungen reiner Text wie bisher.
+
 ## 0.23.0
 Phase 10.2: Szenen.
 - **Szenen** führen mehrere Schritte nacheinander aus, z. B. „Zocken“: ComfyUI beenden → Spiel starten → Home-Assistant-Szene → Lautstärke setzen. Schritt-Typen: Programm starten/beenden, Spiel starten/beenden, PC-Aktion (Sperren, Energiesparmodus, Bildschirm aus, Lautstärke …), Energie-Plan, Home-Assistant-Szene, Warten, Nachricht senden.

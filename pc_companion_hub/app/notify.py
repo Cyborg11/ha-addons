@@ -5,6 +5,7 @@ import asyncio
 import logging
 import re
 import time
+from urllib.parse import quote
 
 import httpx
 
@@ -36,15 +37,19 @@ class HaNotifier:
     def configured(self) -> bool:
         return bool(SERVICE_RE.fullmatch(self.service))
 
-    async def send(self, title: str, message: str, tag: str | None = None) -> tuple[bool, str]:
+    async def send(self, title: str, message: str, tag: str | None = None, actions: list[dict] | None = None) -> tuple[bool, str]:
         m = SERVICE_RE.fullmatch(self.service)
         if not m:
             return False, "notify_service ist nicht gesetzt oder ungültig (Beispiel: notify.mobile_app_pixel_8)"
         if not self.token:
             return False, "Kein Supervisor-Token – die Home-Assistant-API ist nur im laufenden Add-on erreichbar"
         payload = {"title": title, "message": message}
-        if tag:
-            payload["data"] = {"tag": tag}
+        data: dict = {"tag": tag} if tag else {}
+        if actions:                                   # Knöpfe als Deep-Links in die PWA (Android: action URI); Tippen auf die Meldung öffnet die PWA
+            home = actions[0]["uri"].split("#")[0]
+            data.update(actions=actions, url=home, clickAction=home)
+        if data:
+            payload["data"] = data
         try:
             async with httpx.AsyncClient(timeout=10.0, transport=self.transport) as client:
                 r = await client.post(f"{self.base}/services/{m.group(1)}/{m.group(2)}", json=payload,
@@ -74,10 +79,22 @@ class HaNotifier:
         return (True, "") if r.status_code < 300 else (False, f"Home Assistant antwortete {r.status_code} (Szene {entity_id} vorhanden?)")
 
 
+def clean_public_url(url) -> str | None:
+    """Basisadresse der PWA aus der Option ``public_url`` (http/https, ohne Fragment und Schrägstrich am Ende)."""
+    if not isinstance(url, str):
+        return None
+    url = url.strip().split("#")[0].rstrip("/")
+    return url if re.fullmatch(r"https?://[^\s<>\"']{1,200}", url) else None
+
+
+MAX_ACTIONS = 3                                       # Android zeigt höchstens drei Knöpfe
+
+
 class Notifier:
     """Erkennt Ereignisse (Job fertig, PC online/offline, GPU zu heiß) und löst Nachrichten aus."""
 
     def __init__(self, opts: dict, send):
+        self.base = clean_public_url(opts.get("public_url"))
         self.jobs = opts.get("notify_jobs", True) is not False
         self.pc_state = opts.get("notify_pc_state", True) is not False
         self.temp_limit = int(opts.get("notify_temp_c", 85) or 0)
@@ -88,9 +105,19 @@ class Notifier:
         return self.recs.setdefault(pc, {"cur": None, "since": 0.0, "announced": None, "jobs": {}, "hot_since": None,
                                           "last_hot": 0.0, "expect_off": 0.0})
 
-    def _fire(self, title: str, message: str, tag: str) -> None:
+    def link(self, pc: str, cmd: str) -> str:
+        """Deep-Link in die PWA: ``<public_url>/#do=<Befehl>&pc=<PC>``; die PWA fragt vor dem Ausführen einmal nach."""
+        return f"{self.base}/#do={quote(cmd, safe=':-_.')}&pc={quote(pc, safe='-_.')}"
+
+    def _actions(self, pc: str, items: list[tuple[str, str]]) -> list[dict] | None:
+        if not self.base:
+            return None                       # ohne public_url gibt es keine Knöpfe, die Meldung bleibt ein reiner Text
+        return [{"action": "URI", "title": t, "uri": self.link(pc, c)} for t, c in items[:MAX_ACTIONS]] or None
+
+    def _fire(self, title: str, message: str, tag: str, actions: list[dict] | None = None) -> None:
         try:
-            asyncio.get_running_loop().create_task(self.send(title, message, tag))
+            args = (title, message, tag) + ((actions,) if actions else ())
+            asyncio.get_running_loop().create_task(self.send(*args))
         except RuntimeError:
             pass                              # kein Event-Loop (z. B. in Tests ohne Loop)
 
@@ -110,9 +137,9 @@ class Notifier:
         if first:
             return                            # Zustand beim Start des Hubs nicht melden
         if status == "online":
-            self._fire("PC ist online", f"{name} ist hochgefahren.", f"pcc-{pc}-state")
+            self._fire("PC ist online", f"{name} ist hochgefahren.", f"pcc-{pc}-state", self._actions(pc, [("Dashboard", "tab:dash")]))
         elif t >= r["expect_off"]:
-            self._fire("PC ist offline", f"{name} ist nicht mehr erreichbar.", f"pcc-{pc}-state")
+            self._fire("PC ist offline", f"{name} ist nicht mehr erreichbar.", f"pcc-{pc}-state", self._actions(pc, [("Aufwecken", "wake")]))
 
     def on_snapshot(self, pc: str, name: str, snap: dict) -> None:
         r, t = self._rec(pc), now()
@@ -128,9 +155,11 @@ class Notifier:
                     if r["jobs"].get(jid) == "active":
                         label = f"{j.get('tool', 'Job')}: {j.get('title') or 'ohne Titel'}"
                         if st == "done":
-                            self._fire("KI-Job fertig", f"{name} – {label}", f"pcc-{pc}-job-{jid}")
+                            self._fire("KI-Job fertig", f"{name} – {label}", f"pcc-{pc}-job-{jid}",
+                                       self._actions(pc, [("Energiesparmodus", "standby"), ("Galerie", "tab:gallery")]))
                         else:
-                            self._fire("KI-Job fehlgeschlagen", f"{name} – {label}. {j.get('message') or ''}".strip(), f"pcc-{pc}-job-{jid}")
+                            self._fire("KI-Job fehlgeschlagen", f"{name} – {label}. {j.get('message') or ''}".strip(), f"pcc-{pc}-job-{jid}",
+                                       self._actions(pc, [("Dashboard", "tab:dash")]))
                     r["jobs"][jid] = "final"
             if len(r["jobs"]) > 200:
                 r["jobs"] = dict(list(r["jobs"].items())[-100:])
@@ -140,6 +169,9 @@ class Notifier:
                 r["hot_since"] = r["hot_since"] or t
                 if t - r["hot_since"] >= HOT_AFTER_S and t - r["last_hot"] >= HOT_COOLDOWN_S:
                     r["last_hot"] = t
-                    self._fire("GPU sehr heiß", f"{name}: {temp} °C seit über {int(t - r['hot_since'])} s (Grenze {self.temp_limit} °C).", f"pcc-{pc}-hot")
+                    active = next((j for j, st in r["jobs"].items() if st == "active" and re.fullmatch(r"[A-Za-z0-9._:-]{1,80}", str(j))), None)
+                    items = ([("Job abbrechen", f"cancel-job:{active}")] if active else []) + [("Dashboard", "tab:dash")]
+                    self._fire("GPU sehr heiß", f"{name}: {temp} °C seit über {int(t - r['hot_since'])} s (Grenze {self.temp_limit} °C).", f"pcc-{pc}-hot",
+                               self._actions(pc, items))
             elif temp < self.temp_limit - HOT_HYSTERESIS:
                 r["hot_since"] = None

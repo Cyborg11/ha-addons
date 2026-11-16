@@ -116,6 +116,11 @@ Das Master-Dashboard aus ai-core lauscht laut `master.json` auf der Tailscale-Ad
 
 BIOS „Wake on LAN“ aktivieren · Netzwerkadapter: „Nur Magic Packet“ · Windows-Schnellstart aus · LAN-Kabel · MAC notieren.
 
+## Benachrichtigungen mit Aktionen
+
+Ist `public_url` gesetzt (die Adresse, unter der du die PWA am Handy öffnest), tragen die Meldungen Knöpfe. Sie öffnen die PWA mit einem Befehl im Link (`#do=standby`, `wake`, `cancel-job:<id>`, `tab:<name>`, `scene:<id>`) und `&pc=<PC>`.
+Die PWA fragt vor jeder Aktion einmal bestätigend nach. Sie meldet dich dafür nicht neu an: Das Handy muss bei der PWA angemeldet sein. Auf iOS zeigt Home Assistant keine URI-Knöpfe; dort öffnet das Tippen auf die Meldung die PWA.
+
 ## Szenen
 
 Unter **Steuerung → Szenen** legst du Abfolgen an („Zocken“, „Über Nacht rendern“). Jeder Schritt ist ein fester Baustein: Programm/Spiel starten oder beenden, PC-Aktion, Energie-Plan,
