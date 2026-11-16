@@ -116,6 +116,12 @@ Das Master-Dashboard aus ai-core lauscht laut `master.json` auf der Tailscale-Ad
 
 BIOS „Wake on LAN“ aktivieren · Netzwerkadapter: „Nur Magic Packet“ · Windows-Schnellstart aus · LAN-Kabel · MAC notieren.
 
+## Strom und Kosten
+
+Auf dem Dashboard zeigt die Karte „Strom & Kosten“, wie viel Energie der PC verbraucht hat. Der Hub rechnet die Leistung von GPU und CPU (Letzteres braucht `lhm.enabled` am Agenten) in kWh um und ordnet sie dem Tag, dem laufenden KI-Job und dem laufenden Spiel zu.
+Mit `strompreis_ct_kwh` (ein fester Preis, z. B. `32`) kommen Kosten dazu. **Die Werte sind eine Untergrenze**, keine Zählermessung: Mainboard, Lüfter, Netzteil-Verluste und Peripherie fehlen. Für genaue Zahlen taugt eine Steckdose mit Messung in Home Assistant besser; die kWh-Sensoren des Hubs ergänzen sie.
+Mit Home-Assistant-Anbindung schreibt der Hub jede Minute `sensor.pc_companion_<pc>_kwh_heute` und `…_kosten_heute` (abschaltbar mit `energy_sensors: false`).
+
 ## Zeitpläne
 
 Unter **Steuerung → Automatik** legst du zeitgesteuerte Aktionen an (höchstens 30): Wochentage und Uhrzeit, dann *PC aufwecken*, *Szene ausführen* oder *PC ausschalten, wenn nichts läuft*.
