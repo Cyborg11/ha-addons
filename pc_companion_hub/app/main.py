@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import audit as audit_mod, auth, history as history_mod, logredact, notify as notify_mod
 from .hub import Hub
-from . import scenes as scenes_mod, schedules as schedules_mod
+from . import energy as energy_mod, scenes as scenes_mod, schedules as schedules_mod
 from .wol import send_magic_packet
 
 try:                                     # QR-Code der Kopplung; ohne segno bleibt der Link zum Abtippen
@@ -124,6 +124,12 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     ws_devices: dict[WebSocket, str] = {}
     audit = audit_mod.AuditLog(data_dir / "audit.log")
     history = history_mod.History(data_dir / "history.db")
+    tz = schedules_mod.resolve_tz(opts.get("timezone"))
+    energy = energy_mod.EnergyMeter(data_dir / "energy.db", tz)
+    try:
+        price_ct = max(0.0, min(float(opts.get("strompreis_ct_kwh") or 0), 200.0))
+    except (TypeError, ValueError):
+        price_ct = 0.0
     for pid_, h_ in hubs.items():                 # „zuletzt online“ auch nach einem Neustart des Hubs kennen
         h_.last_seen = history.last_t(pid_)
     ha = notify_mod.HaNotifier(opts.get("notify_service", ""), os.environ.get("SUPERVISOR_TOKEN"),
@@ -135,6 +141,7 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
 
     def on_snapshot(pc_id: str, snap: dict) -> None:
         history.feed(pc_id, snap)
+        energy.feed(pc_id, snap)
         notifier.on_snapshot(pc_id, pc_label(hubs[pc_id]), snap)
 
     def on_launch(hub_: Hub, result: dict) -> None:
@@ -152,12 +159,34 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     elif opts.get("pin") and len(str(opts["pin"])) < 6:
         log.warning("Die PIN hat weniger als 6 Zeichen – besser länger wählen (Sperre nach 5 Fehlversuchen besteht trotzdem).")
 
+    async def energy_ha_loop() -> None:
+        """Schreibt jede Minute kWh und Kosten von heute als Sensoren nach Home Assistant (nur im Add-on, mit Supervisor-Token; abschaltbar mit energy_sensors: false)."""
+        if opts.get("energy_sensors", True) is False:
+            return
+        while True:
+            await asyncio.sleep(60)
+            if not ha.token:
+                continue
+            try:
+                for pid, h in hubs.items():
+                    slug = re.sub(r"[^a-z0-9]+", "_", pid.lower()).strip("_") or "pc"
+                    kwh = energy.today(pid)
+                    label = h.name or pid
+                    await ha.set_state(f"sensor.pc_companion_{slug}_kwh_heute", round(kwh, 3),
+                                       {"unit_of_measurement": "kWh", "device_class": "energy", "state_class": "total_increasing", "friendly_name": f"{label} Strom heute"})
+                    if price_ct > 0:
+                        await ha.set_state(f"sensor.pc_companion_{slug}_kosten_heute", round(kwh * price_ct / 100.0, 2),
+                                           {"unit_of_measurement": "€", "device_class": "monetary", "state_class": "total", "friendly_name": f"{label} Stromkosten heute"})
+            except Exception:                                              # noqa: BLE001 - nie den Hub stören
+                log.exception("Strom-Sensoren nicht aktualisiert")
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        tasks = [asyncio.create_task(h.run()) for h in hubs.values()] + [asyncio.create_task(scheduler.run())]
+        tasks = [asyncio.create_task(h.run()) for h in hubs.values()] + [asyncio.create_task(scheduler.run()), asyncio.create_task(energy_ha_loop())]
         yield
         for t in tasks:
             t.cancel()
+        energy.flush()
         for h in hubs.values():
             h.stop()
 
@@ -357,6 +386,11 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
                 except RuntimeError:
                     pass
         return {"ok": True}
+
+    @app.get("/api/energy", dependencies=[Depends(require_ui_token)])
+    def energy_summary(days: int = 30, hub: Hub = Depends(get_hub)):
+        """Strom und Kosten (Phase 10.6): nur gemessene GPU-/CPU-Leistung, also eine Untergrenze – siehe energy.py."""
+        return energy.summary(hub.pc_id, price_ct, days)
 
     @app.get("/api/status", dependencies=[Depends(require_ui_token)])
     def status(hub: Hub = Depends(get_hub)):
@@ -690,7 +724,6 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
 
     # ---- Zeitpläne (Phase 10.5) ----
     schedule_store = schedules_mod.ScheduleStore(data_dir / "schedules.json")
-    tz = schedules_mod.resolve_tz(opts.get("timezone"))
     scheduler = schedules_mod.Scheduler(schedule_store, hubs, scene_store, scene_runner, audit, send_wake,
                                         now=lambda: datetime.now(tz) if tz else datetime.now().astimezone())
 

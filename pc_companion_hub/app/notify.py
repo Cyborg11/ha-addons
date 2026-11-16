@@ -64,6 +64,18 @@ class HaNotifier:
         return True, "gesendet"
 
 
+    async def set_state(self, entity_id: str, state, attributes: dict) -> bool:
+        """Setzt den Zustand eines Sensors in Home Assistant (nur ``sensor.<name>``). Die Sensoren sind nicht dauerhaft: der Hub schreibt sie jede Minute neu."""
+        if not re.fullmatch(r"sensor\.[a-z0-9_]{1,80}", entity_id or "") or not self.token:
+            return False
+        try:
+            async with httpx.AsyncClient(timeout=10.0, transport=self.transport) as client:
+                r = await client.post(f"{self.base}/states/{entity_id}", json={"state": state, "attributes": attributes},
+                                      headers={"Authorization": f"Bearer {self.token}"})
+            return r.status_code < 300
+        except Exception:                                            # noqa: BLE001
+            return False
+
     async def activate_scene(self, entity_id: str) -> tuple[bool, str]:
         """Aktiviert eine Home-Assistant-Szene (nur ``scene.<name>``, nur ``scene.turn_on``)."""
         if not re.fullmatch(r"scene\.[a-z0-9_]{1,64}", entity_id or ""):

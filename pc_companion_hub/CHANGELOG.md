@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.27.0
+Phase 10.6: Strom und Kosten.
+- Neue Karte **Strom & Kosten** auf dem Dashboard: kWh (und Euro) für heute, die letzten 7 Tage und den Monat, ein Balkenverlauf der letzten 14 Tage und die Verbräuche der letzten **KI-Jobs** und **Spielsitzungen**.
+- Der Hub summiert die Leistung von GPU (NVML) und CPU (LibreHardwareMonitor, mit `lhm.enabled` am Agenten) über die Zeit. **Das ist eine Untergrenze:** Mainboard, Lüfter, Netzteil-Verluste, Laufwerke und Peripherie werden nicht gemessen. Ohne CPU-Leistung steht „nur GPU“ dabei. Lücken (PC aus, Hub neu gestartet) werden nicht hochgerechnet.
+- Neue Optionen: `strompreis_ct_kwh` (ein fester Preis je kWh, z. B. 32; ohne Preis keine Euro-Werte) und `energy_sensors` (Standard an).
+- **Home-Assistant-Sensoren** (nur im Add-on): `sensor.pc_companion_<pc>_kwh_heute` und `sensor.pc_companion_<pc>_kosten_heute` werden jede Minute aktualisiert (Energie-Dashboard-tauglich). Sie sind nicht dauerhaft: Nach einem Neustart von Home Assistant erscheinen sie wieder, sobald der Hub schreibt.
+- Daten liegen in `/data/energy.db` (Tage 400, Jobs/Spiele 90 Tage).
+
 ## 0.26.0
 Phase 10.5: Zeitpläne.
 - Unter **Steuerung → Automatik** (vorher „Szenen“) legst du Zeitpläne an: Wochentage und Uhrzeit, dazu eine Aktion – **PC aufwecken**, **Szene ausführen** oder **PC ausschalten, wenn nichts läuft** (Energiesparmodus, Ruhezustand oder Herunterfahren).

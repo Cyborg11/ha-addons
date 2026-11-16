@@ -373,3 +373,10 @@ body.readonly #scenebox{display:none!important}
 .schedrow{align-items:flex-start;flex-wrap:wrap}.schedrow.off b{opacity:.55}.schedrow .row{flex-wrap:wrap;gap:6px;margin-top:6px}.schedrow .row button{min-height:38px;padding:6px 12px;font-size:13px}
 #sched_days{display:flex;flex-wrap:wrap;gap:6px}#sched_cancel{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
 #sched_tz{display:block;margin-top:4px}
+
+/* ---- 0.27 Strom und Kosten ---- */
+.c-energy{grid-column:1/-1}
+.enfigs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}.enfigs>div{display:flex;flex-direction:column;gap:2px;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)}
+.enfigs span{color:var(--dim);font-size:12px}.enfigs b{font-size:16px}.enfigs small{color:var(--ok);min-height:1em}
+.enbars{display:flex;align-items:flex-end;gap:4px;height:64px;margin:6px 0 12px}.enbars i{flex:1;background:rgba(63,216,232,.45);border-radius:4px 4px 0 0;min-height:3px}.enbars i.now{background:var(--ok)}
+.entop{margin-top:8px}.entop summary{cursor:pointer;font-size:13px;color:var(--dim)}.entop .mh{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-top:6px}.enrow{margin-bottom:6px}
