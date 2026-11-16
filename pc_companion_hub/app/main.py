@@ -664,7 +664,9 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
 
     @app.get("/api/screenshot", dependencies=[Depends(require_write)])
     async def screenshot(request: Request, hub: Hub = Depends(get_hub)):
-        return await relay(request, hub, "GET", "/api/screenshot", params=take(request, ("width",)), what="Screenshot", timeout=25.0)
+        # Live-Bild während einer offenen Fernbedienungs-Sitzung: nicht jedes Bild einzeln protokollieren (das Öffnen der Sitzung steht schon im Protokoll)
+        live = request.query_params.get("live") == "1" and remote_until.get(hub.pc_id, 0) > time.time()
+        return await relay(request, hub, "GET", "/api/screenshot", params=take(request, ("width",)), what=None if live else "Screenshot", timeout=25.0)
 
     @app.get("/api/clipboard", dependencies=[Depends(require_write)])
     async def clipboard_get(request: Request, hub: Hub = Depends(get_hub)):

@@ -118,3 +118,18 @@ def test_view_only_devices_and_anonymous_are_refused(client):
         assert client.request(method.upper(), path, headers=v, json={} if method == "post" else None).status_code == 403
         assert client.request(method.upper(), path).status_code == 401
     assert client.calls == []
+
+
+def test_live_screenshots_are_not_logged_one_by_one_but_plain_ones_are(client):
+    async def fetch(method, path, params=None, body=None, timeout=15.0, extra_headers=None):
+        return 200, b"JPEG", "image/jpeg", {}
+    for h in client.app.state.hubs.values():
+        h.agent_fetch = fetch
+    assert client.get("/api/screenshot?live=1", headers=MASTER).status_code == 200
+    assert audit_text(client).count("Screenshot") == 1                                   # ohne Sitzung zählt „live“ nicht
+    client.post("/api/remote/session", headers={**MASTER, **PIN}, json={})
+    for _ in range(3):
+        assert client.get("/api/screenshot?live=1&width=800", headers=MASTER).status_code == 200
+    assert audit_text(client).count("Screenshot") == 1                                   # drei Live-Bilder: kein weiterer Eintrag
+    assert client.get("/api/screenshot", headers=MASTER).status_code == 200
+    assert audit_text(client).count("Screenshot") == 2

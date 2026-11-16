@@ -383,3 +383,4 @@ body.readonly #scenebox{display:none!important}
 #mon_issues>div{margin:4px 0;font-size:14px}#mon_issues .bad{color:var(--crit)}
 
 .rcpad{height:180px;margin:10px 0;border:1px dashed var(--line);border-radius:14px;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;color:var(--dim);touch-action:none;user-select:none}
+.rcpad.hasimg{background-size:contain;background-repeat:no-repeat;background-position:center;height:240px}.rcpad.hasimg span{display:none}

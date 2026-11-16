@@ -13,8 +13,33 @@
   }
   const send = body => call("POST", "api/remote/input", body).catch(e => { if (e.status === 403) end("Die Sitzung ist beendet."); else $("rc_msg").textContent = e.message; });
 
+  let viewTimer = 0, viewBusy = false, viewUrl = null;
+  function stopView() {
+    clearInterval(viewTimer); viewTimer = 0;
+    if (viewUrl) { URL.revokeObjectURL(viewUrl); viewUrl = null; }
+    $("rc_pad").style.backgroundImage = "";
+    $("rc_pad").classList.remove("hasimg");
+  }
+  async function pullView() {
+    if (viewBusy || document.hidden || !open) return;
+    viewBusy = true;
+    try {
+      const r = await fetch(pcq("api/screenshot?width=900&live=1"), { headers: authHeaders() });
+      if (r.ok && $("rc_view").checked && open) {
+        const u = URL.createObjectURL(await r.blob());
+        $("rc_pad").style.backgroundImage = "url(" + u + ")";
+        $("rc_pad").classList.add("hasimg");
+        if (viewUrl) URL.revokeObjectURL(viewUrl);
+        viewUrl = u;
+      }
+    } catch (e) { /* nächster Versuch in 2 s */ }
+    viewBusy = false;
+  }
+  $("rc_view").onchange = () => { stopView(); if ($("rc_view").checked && open) { pullView(); viewTimer = setInterval(pullView, 2000); } };
+
   function show(on) {
     open = on;
+    if (!on) { stopView(); $("rc_view").checked = false; }
     $("rc_live").hidden = !on;
     $("rc_start_box").hidden = on;
     clearInterval(timer); clearInterval(polling);

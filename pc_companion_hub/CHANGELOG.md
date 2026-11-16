@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.33.0
+- Fernbedienung: optional **Bildschirm als Hintergrund** des Touchpads (alle 2 Sekunden ein Screenshot, nur während einer offenen Sitzung und nur mit Screenshot-Funktion am Agenten). Die Live-Bilder werden nicht einzeln protokolliert; das Öffnen der Sitzung steht im Protokoll.
+
 ## 0.32.1
 - Gesundheitsmeldungen: beim ersten Check nach dem Start des Hubs werden schon bestehende Hinweise (z. B. „Neustart ausstehend“) nicht mehr gemeldet, nur Dringendes. Vorher kam dieselbe Meldung nach jedem Neustart des Add-ons.
 - DOCS: Abschnitt „Fernbedienung“ und die neuen Bereiche (Dateien am PC, Gesundheit, Anzeige) in der Voraussetzungs-Tabelle.
