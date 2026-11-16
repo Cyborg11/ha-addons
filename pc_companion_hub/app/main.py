@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -15,7 +16,7 @@ from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Reques
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import audit as audit_mod, auth, history as history_mod, logredact, notify as notify_mod
+from . import audit as audit_mod, auth, history as history_mod, logredact, notify as notify_mod, stats as stats_mod
 from .hub import Hub
 from . import energy as energy_mod, scenes as scenes_mod, schedules as schedules_mod
 from .wol import send_magic_packet
@@ -180,9 +181,31 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
             except Exception:                                              # noqa: BLE001 - nie den Hub stören
                 log.exception("Strom-Sensoren nicht aktualisiert")
 
+    health_cache: dict[str, dict] = {}
+
+    async def health_loop() -> None:
+        """Fragt alle 5 Minuten die Gesundheitsprüfung der online erreichbaren PCs ab (Feature health) und meldet neue Auffälligkeiten."""
+        while True:
+            await asyncio.sleep(20)
+            for pid, h in hubs.items():
+                try:
+                    t = time.time()
+                    if h.status != "online" or "health" not in h.features or t - health_cache.get(pid, {}).get("at", 0) < 300:
+                        continue
+                    code, content, _ = await h.agent_request("GET", "/api/system/health", None, None, 40.0)
+                    if code != 200:
+                        continue
+                    data = json.loads(content)
+                    health_cache[pid] = {"at": t, "data": data}
+                    notifier.on_health(pid, pc_label(h), data.get("issues") or [])
+                except Exception:                                          # noqa: BLE001 - nie den Hub stören
+                    log.exception("Gesundheitsprüfung fehlgeschlagen")
+            await asyncio.sleep(40)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        tasks = [asyncio.create_task(h.run()) for h in hubs.values()] + [asyncio.create_task(scheduler.run()), asyncio.create_task(energy_ha_loop())]
+        tasks = [asyncio.create_task(h.run()) for h in hubs.values()] + [asyncio.create_task(scheduler.run()), asyncio.create_task(energy_ha_loop()),
+                                                                          asyncio.create_task(health_loop())]
         yield
         for t in tasks:
             t.cancel()
@@ -391,6 +414,23 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     def energy_summary(days: int = 30, hub: Hub = Depends(get_hub)):
         """Strom und Kosten (Phase 10.6): nur gemessene GPU-/CPU-Leistung, also eine Untergrenze – siehe energy.py."""
         return energy.summary(hub.pc_id, price_ct, days)
+
+    @app.get("/api/health-check", dependencies=[Depends(require_ui_token)])
+    def health_check(hub: Hub = Depends(get_hub)):
+        """Letzte Gesundheitsprüfung des Agenten (Phase 10.7), höchstens 5 Minuten alt; leer, solange noch keine vorliegt."""
+        c = health_cache.get(hub.pc_id)
+        return {"checked": c["at"], **c["data"]} if c else {"checked": None, "issues": [], "supported": "health" in hub.features}
+
+    @app.get("/api/stats", dependencies=[Depends(require_ui_token)])
+    def stats_summary(hub: Hub = Depends(get_hub)):
+        """Statistik (Phase 10.7): Spielzeit pro Woche, Job-Dauer im Trend, Auslastung pro Tag – aus Strom- und Verlaufsdaten."""
+        tz = energy.tz
+        today = stats_mod.today_in(tz)
+        since = time.time() - 90 * 86400
+        games = [(n, t0, t1) for n, _tool, t0, t1, _wh in energy.events(hub.pc_id, "game", since)]
+        jobs = energy.events(hub.pc_id, "job", since)
+        return {"games_weekly": stats_mod.games_weekly(games, today, tz), "jobs": stats_mod.job_trend([(n, tool, t0, t1) for n, tool, t0, t1, _ in jobs]),
+                "usage": stats_mod.usage_days(history.raw(hub.pc_id, 15), today, tz), "note": "Nur Läufe ab etwa 0,2 Wh Strom; Auslastung aus dem 14-Tage-Verlauf."}
 
     @app.get("/api/status", dependencies=[Depends(require_ui_token)])
     def status(hub: Hub = Depends(get_hub)):

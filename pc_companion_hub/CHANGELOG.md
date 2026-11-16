@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.30.0
+Phase 10.7: Überwachung.
+- Meldung **KI-Job hängt vielleicht**: Fortschritt steht länger als `notify_hang_min` Minuten (Standard 20) still und die GPU ist untätig; mit Knopf „Job abbrechen“. Arbeitet die GPU noch, bleibt es still.
+- **Gesundheit** (Agent mit `health`): Laufwerk fast voll, SMART-Zustand, Neustart ausstehend, LibreHardwareMonitor nicht erreichbar – als Meldung (einmal je Auffälligkeit, nach einem Tag erneut) und in der neuen Dashboard-Karte.
+- **Statistik** in derselben Karte: Spielzeit pro Woche (8 Wochen, mit meistgespieltem Spiel), Dauer der letzten KI-Jobs mit Trend je Werkzeug und Auslastung pro Tag (14 Tage). Aus den vorhandenen Strom- und Verlaufsdaten.
+
 ## 0.29.0
 Phase 10.9: Dateibrowser (nur lesen).
 - Im Tab „Dateien“ erscheint **Dateien am PC**, sobald der Agent Ordner freigibt (`browse.folders` in dessen `config.yaml`). Ordner durchsuchen, Bilder/PDF/Text ansehen, alles andere und größere Dateien (bis 100 MB) herunterladen.

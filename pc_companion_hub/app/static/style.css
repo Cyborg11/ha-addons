@@ -380,3 +380,4 @@ body.readonly #scenebox{display:none!important}
 .enfigs span{color:var(--dim);font-size:12px}.enfigs b{font-size:16px}.enfigs small{color:var(--ok);min-height:1em}
 .enbars{display:flex;align-items:flex-end;gap:4px;height:64px;margin:6px 0 12px}.enbars i{flex:1;background:rgba(63,216,232,.45);border-radius:4px 4px 0 0;min-height:3px}.enbars i.now{background:var(--ok)}
 .entop{margin-top:8px}.entop summary{cursor:pointer;font-size:13px;color:var(--dim)}.entop .mh{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-top:6px}.enrow{margin-bottom:6px}
+#mon_issues>div{margin:4px 0;font-size:14px}#mon_issues .bad{color:var(--crit)}
