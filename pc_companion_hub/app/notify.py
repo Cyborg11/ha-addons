@@ -163,6 +163,8 @@ class Notifier:
     def on_health(self, pc: str, name: str, issues: list[dict]) -> None:
         """Meldet neue Auffälligkeiten der Gesundheitsprüfung einmal (und nach einem Tag erneut, solange sie bestehen)."""
         r, t = self._rec(pc), now()
+        first = not r.get("health_seen")
+        r["health_seen"] = True
         seen = {i.get("id") for i in issues if isinstance(i, dict)}
         for gone in [k for k in r["health"] if k not in seen]:
             del r["health"][gone]
@@ -171,6 +173,8 @@ class Notifier:
             if not iid or iid in HEALTH_QUIET or t - r["health"].get(iid, -HEALTH_REPEAT_S) < HEALTH_REPEAT_S:
                 continue
             r["health"][iid] = t
+            if first and i.get("level") != "bad":
+                continue                      # beim Start des Hubs schon bestehende Hinweise nicht melden (nur Dringendes)
             self._fire("Gesundheit: " + ("dringend" if i.get("level") == "bad" else "Hinweis"), f"{name}: {str(i.get('text', ''))[:200]}",
                        f"pcc-{pc}-health-{re.sub(r'[^a-z0-9]+', '-', str(iid).lower())[:40]}", self._actions(pc, [("Dashboard", "tab:dash")]))
 
