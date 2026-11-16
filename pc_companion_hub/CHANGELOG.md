@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.32.0
+Phase 10.10 (Teil 2): **Fernbedienung light** – Maus und Tastatur des PCs vom Handy.
+- Tab „Steuerung“: Panel **Fernbedienung** mit Touchpad (ziehen = Maus, tippen = Klick), Klick-/Scroll-/Pfeil-/Enter-Knöpfen und Texteingabe.
+- **Mehrfach abgesichert:** am PC standardmäßig aus (Agent: `remote_input.enabled: true`), im Add-on nur mit gesetzter **`confirm_pin`**, Sitzung nur mit PIN, höchstens 15 Minuten (Standard 5, endet von selbst), nur Vollzugriff, Öffnen und Beenden stehen im Protokoll. Keine Alt-/Windows-Tasten, Text höchstens 200 Zeichen, höchstens 60 Eingaben pro Sekunde.
+- Benötigt den Agenten mit Feature `remote_input`.
+
 ## 0.31.0
 Phase 10.10 (Teil 1): Anzeigeprofile.
 - Tab „Steuerung“: Panel **Anzeige** mit Erweitern, Duplizieren, Nur PC-Bildschirm, Nur Zweitbildschirm (`DisplaySwitch.exe`, wie Win+P). Die beiden „Nur …“-Modi fragen nach, weil ein Bildschirm dunkel wird.

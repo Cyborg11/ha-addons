@@ -850,6 +850,55 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         scheduler.unskip(sid)
         return {"ok": True}
 
+    # ---- Fernbedienung light (Phase 10.10): nur mit Schreibrecht UND gesetzter confirm_pin, Sitzung mit Zeitlimit, Öffnen/Schließen im Protokoll ----
+    remote_until: dict[str, float] = {}
+    REMOTE_INPUT_KEYS = ("type", "dx", "dy", "button", "double", "steps", "text", "key", "mods")
+
+    def remote_feature(hub: Hub) -> None:
+        if hub.status != "online":
+            raise HTTPException(status_code=409, detail="PC ist nicht online")
+        if "remote_input" not in hub.features:
+            raise HTTPException(status_code=404, detail="Die Fernbedienung ist am PC nicht aktiviert (Agent-Konfiguration remote_input.enabled).")
+
+    @app.get("/api/remote", dependencies=[Depends(require_write)])
+    def remote_status(hub: Hub = Depends(get_hub)):
+        left = max(0, int(remote_until.get(hub.pc_id, 0) - time.time()))
+        return {"available": "remote_input" in hub.features and bool(confirm_pin), "pin_set": bool(confirm_pin), "open": left > 0, "left_s": left}
+
+    @app.post("/api/remote/session", dependencies=[Depends(require_write)])
+    async def remote_open(request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
+        if not confirm_pin:
+            raise HTTPException(status_code=403, detail="Die Fernbedienung braucht eine Sicherheits-PIN (Add-on-Option confirm_pin).")
+        require_pin(request)
+        remote_feature(hub)
+        minutes = (body or {}).get("minutes", 5)
+        if isinstance(minutes, bool) or not isinstance(minutes, int) or not 1 <= minutes <= 15:
+            raise HTTPException(status_code=400, detail="minutes muss 1 bis 15 sein")
+        code, content, ctype = await hub.agent_request("POST", "/api/remote/session", None, {"minutes": minutes}, 10.0)
+        ok = code == 200
+        record(request, "Fernbedienung geöffnet", pc=hub.name or hub.pc_id, detail=f"{minutes} Min.", ok=ok)
+        if ok:
+            remote_until[hub.pc_id] = time.time() + minutes * 60
+        return Response(content=content, status_code=code, media_type=ctype)
+
+    @app.delete("/api/remote/session", dependencies=[Depends(require_write)])
+    async def remote_close(request: Request, hub: Hub = Depends(get_hub)):
+        was_open = remote_until.pop(hub.pc_id, 0) > time.time()
+        if hub.status == "online" and "remote_input" in hub.features:
+            await hub.agent_request("DELETE", "/api/remote/session", None, None, 10.0)
+        if was_open:
+            record(request, "Fernbedienung beendet", pc=hub.name or hub.pc_id)
+        return {"ok": True, "open": False}
+
+    @app.post("/api/remote/input", dependencies=[Depends(require_write)])
+    async def remote_input(request: Request, body: dict = Body(...), hub: Hub = Depends(get_hub)):
+        if remote_until.get(hub.pc_id, 0) <= time.time():
+            raise HTTPException(status_code=403, detail="Keine offene Fernbedienungs-Sitzung")
+        remote_feature(hub)
+        clean = {k: body[k] for k in REMOTE_INPUT_KEYS if k in body}
+        code, content, ctype = await hub.agent_request("POST", "/api/remote/input", None, clean, 5.0)
+        return Response(content=content, status_code=code, media_type=ctype, headers={"Cache-Control": "no-store"})
+
     @app.post("/api/action/{name}", dependencies=[Depends(require_write)])
     async def action(name: str, request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
         if name not in ALLOWED_ACTIONS:
