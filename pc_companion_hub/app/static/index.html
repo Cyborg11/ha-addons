@@ -243,6 +243,37 @@
       <div id="extra_msg"></div>
     </div>
 
+    <div class="panel pad" id="remotepanel" data-feature="remote_input" hidden>
+      <h3>Fernbedienung <small class="muted">Maus und Tastatur, zeitlich begrenzt</small></h3>
+      <div id="rc_start_box">
+        <button id="rc_start" class="primary" type="button">Sitzung starten (5 Minuten)</button>
+        <p class="hint" id="rc_hint">Dafür ist die Sicherheits-PIN nötig. Die Sitzung endet von selbst.</p>
+      </div>
+      <div id="rc_live" hidden>
+        <div class="row"><b id="rc_left"></b><button id="rc_stop" class="danger" type="button">Beenden</button></div>
+        <div id="rc_pad" class="rcpad" role="application" aria-label="Touchpad: ziehen bewegt die Maus, tippen klickt"><span>Touchpad</span></div>
+        <div class="grid4">
+          <button type="button" data-rc='{"type":"click","button":"left"}'>Linksklick</button>
+          <button type="button" data-rc='{"type":"click","button":"right"}'>Rechtsklick</button>
+          <button type="button" data-rc='{"type":"click","button":"left","double":true}'>Doppelklick</button>
+          <button type="button" data-rc='{"type":"scroll","steps":-3}'>Scroll ↑</button>
+          <button type="button" data-rc='{"type":"scroll","steps":3}'>Scroll ↓</button>
+          <button type="button" data-rc='{"type":"key","key":"esc"}'>Esc</button>
+          <button type="button" data-rc='{"type":"key","key":"enter"}'>Enter</button>
+          <button type="button" data-rc='{"type":"key","key":"tab"}'>Tab</button>
+          <button type="button" data-rc='{"type":"key","key":"backspace"}'>⌫</button>
+          <button type="button" data-rc='{"type":"key","key":"left"}'>←</button>
+          <button type="button" data-rc='{"type":"key","key":"up"}'>↑</button>
+          <button type="button" data-rc='{"type":"key","key":"down"}'>↓</button>
+          <button type="button" data-rc='{"type":"key","key":"right"}'>→</button>
+          <button type="button" data-rc='{"type":"key","key":"space"}'>Leertaste</button>
+          <button type="button" data-rc='{"type":"key","key":"f11"}'>F11</button>
+        </div>
+        <div class="row"><input id="rc_text" type="text" maxlength="200" placeholder="Text eintippen …" autocomplete="off" autocapitalize="off"><button id="rc_send" type="button">Senden</button></div>
+      </div>
+      <div id="rc_msg" class="muted"></div>
+    </div>
+
     <div class="panel pad" id="displaypanel" data-feature="display" hidden>
       <h3>Anzeige <small class="muted">Windows-Anzeigemodus (Win+P)</small></h3>
       <div class="grid4">
@@ -553,6 +584,7 @@
 <script src="upload.js"></script>
 <script src="browse.js"></script>
 <script src="monitor.js"></script>
+<script src="remote.js"></script>
 <script src="devices.js"></script>
 <script src="history.js"></script>
 <script src="agentfx.js"></script>
