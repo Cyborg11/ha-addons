@@ -8,6 +8,7 @@ import logging
 import os
 import re
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
@@ -16,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import audit as audit_mod, auth, history as history_mod, logredact, notify as notify_mod
 from .hub import Hub
-from . import scenes as scenes_mod
+from . import scenes as scenes_mod, schedules as schedules_mod
 from .wol import send_magic_packet
 
 try:                                     # QR-Code der Kopplung; ohne segno bleibt der Link zum Abtippen
@@ -153,7 +154,7 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        tasks = [asyncio.create_task(h.run()) for h in hubs.values()]
+        tasks = [asyncio.create_task(h.run()) for h in hubs.values()] + [asyncio.create_task(scheduler.run())]
         yield
         for t in tasks:
             t.cancel()
@@ -686,6 +687,71 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         if cancelled:
             record(request, "Szene abgebrochen (angefordert)", pc=hub.name or hub.pc_id, detail=hub.scene_run["name"])
         return {"ok": True, "cancelled": cancelled}
+
+    # ---- Zeitpläne (Phase 10.5) ----
+    schedule_store = schedules_mod.ScheduleStore(data_dir / "schedules.json")
+    tz = schedules_mod.resolve_tz(opts.get("timezone"))
+    scheduler = schedules_mod.Scheduler(schedule_store, hubs, scene_store, scene_runner, audit, send_wake,
+                                        now=lambda: datetime.now(tz) if tz else datetime.now().astimezone())
+
+    def schedule_or_404(sid: str) -> dict:
+        s = schedule_store.get(sid) if schedules_mod.SAFE_ID.fullmatch(sid) else None
+        if not s:
+            raise HTTPException(status_code=404, detail="unbekannter Zeitplan")
+        return s
+
+    def schedule_public(s: dict) -> dict:
+        return {**s, "text": schedules_mod.describe(s), "next": schedules_mod.next_run_date(s, scheduler.now()).isoformat() if s["enabled"] else None}
+
+    @app.get("/api/schedules", dependencies=[Depends(require_ui_token)])
+    def schedules_list():
+        return {"schedules": [schedule_public(s) for s in schedule_store.list()], "timezone": str(tz) if tz else "lokal", "now": scheduler.now().isoformat(timespec="minutes"),
+                "limits": {"max": schedules_mod.MAX_SCHEDULES}}
+
+    @app.post("/api/schedules", dependencies=[Depends(require_write)])
+    def schedule_create(request: Request, body: dict | None = Body(default=None)):
+        try:
+            cand = schedules_mod.clean_schedule(body)
+            if schedules_mod.is_critical(cand):
+                require_pin(request)
+            s = schedule_store.create(body)
+        except schedules_mod.ScheduleError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        record(request, "Zeitplan angelegt", detail=schedules_mod.describe(s)[:120])
+        return schedule_public(s)
+
+    @app.put("/api/schedules/{sid}", dependencies=[Depends(require_write)])
+    def schedule_update(sid: str, request: Request, body: dict | None = Body(default=None)):
+        old = schedule_or_404(sid)
+        try:
+            cand = schedules_mod.clean_schedule(body, sid)
+            if schedules_mod.is_critical(cand) or schedules_mod.is_critical(old):
+                require_pin(request)
+            s = schedule_store.replace(sid, body)
+        except schedules_mod.ScheduleError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        record(request, "Zeitplan geändert", detail=schedules_mod.describe(s)[:120])
+        return schedule_public(s)
+
+    @app.delete("/api/schedules/{sid}", dependencies=[Depends(require_write)])
+    def schedule_delete(sid: str, request: Request):
+        s = schedule_or_404(sid)
+        schedule_store.delete(sid)
+        record(request, "Zeitplan gelöscht", detail=s["name"])
+        return {"ok": True}
+
+    @app.post("/api/schedules/{sid}/skip", dependencies=[Depends(require_write)])
+    def schedule_skip(sid: str, request: Request):
+        schedule_or_404(sid)
+        d = scheduler.skip_next(sid)
+        record(request, "Zeitplan: nächsten Lauf überspringen", detail=f"{schedule_store.get(sid)['name']} ({d})")
+        return {"ok": True, "skip_date": d}
+
+    @app.delete("/api/schedules/{sid}/skip", dependencies=[Depends(require_write)])
+    def schedule_unskip(sid: str):
+        schedule_or_404(sid)
+        scheduler.unskip(sid)
+        return {"ok": True}
 
     @app.post("/api/action/{name}", dependencies=[Depends(require_write)])
     async def action(name: str, request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):

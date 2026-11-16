@@ -368,3 +368,8 @@ body.readonly #scenebox{display:none!important}
 /* ---- 0.25 Sicherheits-PIN ---- */
 #pin_sheet{z-index:90}.pinbox{max-width:360px;display:block}.pinmain h3{margin:0 0 6px}#pin_input{font-size:22px;letter-spacing:.3em;text-align:center}
 .pinbtns{margin-top:14px;flex-wrap:wrap}#pin_cancel{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
+
+/* ---- 0.26 Zeitpläne ---- */
+.schedrow{align-items:flex-start;flex-wrap:wrap}.schedrow.off b{opacity:.55}.schedrow .row{flex-wrap:wrap;gap:6px;margin-top:6px}.schedrow .row button{min-height:38px;padding:6px 12px;font-size:13px}
+#sched_days{display:flex;flex-wrap:wrap;gap:6px}#sched_cancel{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
+#sched_tz{display:block;margin-top:4px}
