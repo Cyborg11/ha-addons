@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.1
+- Der Knopf heißt jetzt „Update laden (prüft Dateien)“. Steam bietet keinen Befehl, der nur das Update lädt (am echten PC mit `steam://validate` und `steam://install` ausprobiert: nur `validate` startet etwas); es prüft zuerst alle Dateien. Bei Spielen ab 20 GB steht dazu ein Hinweis, dass das einige Minuten dauern kann.
+- Wer das Prüfen vermeiden will: in Steam unter Eigenschaften → Updates „Dieses Spiel immer aktuell halten“ wählen.
+
 ## 0.22.0
 Phase 10.1: GPU-Konflikt-Wächter (braucht den Agenten mit Feature `guard`).
 - Vor dem **Start eines Spiels** und vor dem **Start eines Programms** (z. B. ComfyUI) prüft die Oberfläche, ob die GPU belegt ist: laufender KI-Job, laufendes Spiel, ein laufendes Programm, hohe GPU-Last oder viel belegter VRAM. Bei einem Konflikt erscheint ein Dialog mit dem Grund (z. B. „ComfyUI – 13,4 GB VRAM, 97 % Last“).

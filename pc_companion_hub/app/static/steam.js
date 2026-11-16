@@ -194,7 +194,8 @@
     msg.textContent = "Starte das Update …";
     try {
       await call("POST", "api/steam/games/" + g.appid + "/update");
-      msg.textContent = "Steam prüft die Dateien und lädt das Update. Den Fortschritt siehst du unter „Downloads & Speicher“.";
+      // Steam kennt keinen Befehl nur fürs Update: es prüft zuerst alle Dateien des Spiels (bei großen Spielen dauert das)
+      msg.textContent = "Steam prüft die Dateien und lädt das Update." + (g.size_gb >= 20 ? " Bei " + fmtGb(g.size_gb) + " kann die Prüfung einige Minuten dauern." : "") + " Den Fortschritt siehst du unter „Downloads & Speicher“.";
       setTimeout(async () => { await load(true); paintGrid(); if (!$("st_sheet").hidden) paintSheet(); if ($("st_dlbox").open) loadDownloads(); }, 4000);
     } catch (e) { msg.textContent = e.message; }
   };
