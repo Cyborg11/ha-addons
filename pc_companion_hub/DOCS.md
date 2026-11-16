@@ -148,6 +148,10 @@ Home-Assistant-Szene (`scene.<name>`, braucht die Home-Assistant-Anbindung des A
 Beim Ausführen zeigt eine Karte den Fortschritt; schlägt ein Schritt fehl, stoppt die Szene (die übrigen Schritte werden übersprungen). „PC bei Bedarf aufwecken“ sendet das Magic Packet und wartet auf den Agenten
 (Zeiten wie bei „Aufwecken und starten“). Nur Geräte mit Vollzugriff dürfen Szenen sehen und ausführen; Nur-Ansicht-Geräte sehen sie nicht auf dem Dashboard.
 
+## Update laden und danach starten (Steam)
+
+Im Spielblatt eines Spiels mit verfügbarem Update startet „Update laden und danach starten“ das Update (Steam prüft dabei die Dateien) und startet das Spiel selbst, sobald es fertig ist; ein erneutes Tippen bricht den Start ab, das Update läuft weiter. Der Zustand liegt im Hub: ein Neustart des Add-ons vergisst den Auftrag. „Zufallsspiel“ über der Liste öffnet ein zufälliges installiertes Spiel (bevorzugt unter 2 Stunden Spielzeit).
+
 ## Aufwecken und starten (Steam)
 
 Ist der PC aus, zeigt die Offline-Seite unter dem Aufwecken-Knopf die zuletzt gespielten Spiele (die Liste merkt sich der Browser, sobald der Tab „Spiele“ einmal geöffnet war). Antippen weckt den PC und merkt das Spiel vor; sobald der Agent antwortet und Steam meldet, wartet der Hub kurz (`launch_delay_s`) und startet es. Auf der Warte-Seite steht „Startet danach: …“ mit Abbrechen, am Ende kommt eine Meldung (und ein Protokolleintrag). Schlägt der Start fehl oder meldet sich der PC nicht rechtzeitig, steht der Grund dort. Das setzt `mac` (Wake-on-LAN) voraus.

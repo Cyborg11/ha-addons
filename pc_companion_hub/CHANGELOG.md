@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.28.0
+Phase 10.8: Steam-Reste.
+- **Update laden und danach starten:** im Spielblatt eines Spiels mit verfügbarem Update. Der Hub stößt das Update an, fragt alle 10 Sekunden den Stand ab und startet das Spiel einmal, sobald Steam fertig ist (jederzeit abbrechbar; das Update läuft dann weiter). Scheitert es (Steam beginnt nicht, anderes Spiel läuft, über 6 Stunden), steht der Grund in der Meldung.
+- **Zufallsspiel:** Knopf über der Spieleliste öffnet ein zufälliges installiertes Spiel, bevorzugt eines mit unter 2 Stunden Spielzeit; gestartet wird erst nach dem Tippen auf „Starten“.
+- Agent (separat): Steam-Screenshots erscheinen automatisch als Galerie-Ordner `steam-screenshots`.
+
 ## 0.27.0
 Phase 10.6: Strom und Kosten.
 - Neue Karte **Strom & Kosten** auf dem Dashboard: kWh (und Euro) für heute, die letzten 7 Tage und den Monat, ein Balkenverlauf der letzten 14 Tage und die Verbräuche der letzten **KI-Jobs** und **Spielsitzungen**.

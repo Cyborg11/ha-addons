@@ -157,6 +157,9 @@
     for (const [k, v] of rows) { const d = document.createElement("div"), a = document.createElement("span"), b = document.createElement("b"); a.textContent = k; b.textContent = v; d.append(a, b); box.append(d); }
     $("st_launch").hidden = isRun; $("st_launch").disabled = !g.launchable;
     $("st_update").hidden = !(features.includes("steam_update") && !g.non_steam && !isRun && g.state === "update_required");
+    const pu = window.__pendingMsg && window.__pendingMsg.pending_update;
+    $("st_update_go").hidden = $("st_update").hidden && !(pu && pu.appid === g.appid);
+    $("st_update_go").textContent = pu && pu.appid === g.appid ? "Startet nach dem Update – abbrechen" : "Update laden und danach starten";
     $("st_stop").hidden = !isRun;
     const sk = g.appid + "|" + g.art_ver;                            // auch ein getauschtes Cover im Detailblatt neu laden
     if (sheetArt !== sk) {
@@ -197,6 +200,17 @@
       // Steam kennt keinen Befehl nur fürs Update: es prüft zuerst alle Dateien des Spiels (bei großen Spielen dauert das)
       msg.textContent = "Steam prüft die Dateien und lädt das Update." + (g.size_gb >= 20 ? " Bei " + fmtGb(g.size_gb) + " kann die Prüfung einige Minuten dauern." : "") + " Den Fortschritt siehst du unter „Downloads & Speicher“.";
       setTimeout(async () => { await load(true); paintGrid(); if (!$("st_sheet").hidden) paintSheet(); if ($("st_dlbox").open) loadDownloads(); }, 4000);
+    } catch (e) { msg.textContent = e.message; }
+  };
+  $("st_update_go").onclick = async () => {
+    const g = games.find(x => x.appid === openId);
+    if (!g) return;
+    const msg = $("st_sheet_msg"), pu = window.__pendingMsg && window.__pendingMsg.pending_update;
+    try {
+      if (pu && pu.appid === g.appid) { await call("DELETE", "api/steam/games/" + g.appid + "/update"); msg.textContent = "Start nach dem Update abgebrochen (das Update läuft weiter)."; return; }
+      await call("POST", "api/steam/games/" + g.appid + "/update?then=launch&name=" + encodeURIComponent(g.name));
+      msg.textContent = "Steam prüft die Dateien und lädt das Update; danach startet das Spiel von selbst. Das kann bei großen Spielen dauern.";
+      setTimeout(async () => { await load(true); paintGrid(); if (!$("st_sheet").hidden) paintSheet(); }, 4000);
     } catch (e) { msg.textContent = e.message; }
   };
   $("st_launch").onclick = async () => {
@@ -431,9 +445,10 @@
     off.hidden = !(p && m.status === "offline");
     for (const [el, txt] of [[wake, "wakepending_txt"], [off, "offpending_txt"]]) if (!el.hidden) $(txt).textContent = "Startet danach: " + p.name;
     paintOfflineGames(m);
-    if (p && m.status === "online") showToast("Startet gleich: " + p.name + " …", null);
+    if (m.pending_update && !p) showToast("Wartet auf das Update, dann startet: " + m.pending_update.name + " …", null);
+    else if (p && m.status === "online") showToast("Startet gleich: " + p.name + " …", null);
     else if (r && r.at !== lastToast) { lastToast = r.at; showToast(r.ok ? "„" + r.name + "“ gestartet." : "„" + r.name + "“ nicht gestartet: " + r.message, r.ok); }
-    else if (!p && $("launchtoast").className === "toast") $("launchtoast").hidden = true;
+    else if (!p && !m.pending_update && $("launchtoast").className === "toast") $("launchtoast").hidden = true;
     window.__pendingMsg = m;
   });
   $("wakepending_cancel").onclick = () => window.__pendingMsg && cancelPending(window.__pendingMsg);
@@ -442,6 +457,13 @@
 
   /* ---- Steuerleiste ---- */
   $("st_sort").value = cmp[sort] ? sort : "recent";
+  $("st_random").onclick = () => {
+    const ok = games.filter(g => g.launchable && g.state === "installed");
+    if (!ok.length) { $("st_msg").textContent = "Kein startbares Spiel gefunden."; return; }
+    const fresh = ok.filter(g => (g.playtime_min || 0) < 120);              // wenig oder nie gespielt zuerst
+    const pool = fresh.length ? fresh : ok;
+    openSheet(pool[Math.floor(Math.random() * pool.length)].appid);
+  };
   $("st_sort").onchange = () => { sort = $("st_sort").value; store.set("pcc_steam_sort", sort); paintGrid(); };
   let qt;
   $("st_q").oninput = () => { clearTimeout(qt); qt = setTimeout(() => { query = $("st_q").value; paintGrid(); }, 150); };
