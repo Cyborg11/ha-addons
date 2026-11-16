@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.1
+- Gesundheitsmeldungen: beim ersten Check nach dem Start des Hubs werden schon bestehende Hinweise (z. B. „Neustart ausstehend“) nicht mehr gemeldet, nur Dringendes. Vorher kam dieselbe Meldung nach jedem Neustart des Add-ons.
+- DOCS: Abschnitt „Fernbedienung“ und die neuen Bereiche (Dateien am PC, Gesundheit, Anzeige) in der Voraussetzungs-Tabelle.
+
 ## 0.32.0
 Phase 10.10 (Teil 2): **Fernbedienung light** – Maus und Tastatur des PCs vom Handy.
 - Tab „Steuerung“: Panel **Fernbedienung** mit Touchpad (ziehen = Maus, tippen = Klick), Klick-/Scroll-/Pfeil-/Enter-Knöpfen und Texteingabe.

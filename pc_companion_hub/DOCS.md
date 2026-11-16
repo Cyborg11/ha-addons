@@ -26,6 +26,10 @@ Mit einem Agenten ab Phase 8 (PCCompanion, `GET /health` meldet `features`) ersc
 | Galerie | `gallery.folders:` mit Ausgabeordnern; Vorschaubilder brauchen `Pillow` |
 | Spiele (Steam) | wird automatisch erkannt (Steam installiert); Einstellungen unter `steam:` in der `config.yaml` des Agenten. Für „Bilder ändern“ (Cover, Header, Hero, Logo) dort `steam.griddb_key` eintragen: kostenloser API-Schlüssel von steamgriddb.com (Profil → Preferences → API). Ohne Schlüssel lässt sich ein eigenes Bild nur zurücksetzen. Eigene Verknüpfungen („Nicht-Steam-Spiele“) werden ebenfalls angezeigt (`steam.shortcuts: false` schaltet sie ab). |
 | Screenshot | `Pillow` |
+| Dateien am PC (Tab „Dateien“) | `browse.folders:` mit den freigegebenen Ordnern; nur ansehen und herunterladen (bis 100 MB), versteckte Dateien und Verknüpfungen nach außen bleiben unsichtbar; nur mit Vollzugriff, Downloads im Protokoll |
+| Gesundheit & Statistik | keine (Agent mit Feature `health`); `lhm.enabled` für die Prüfung von LibreHardwareMonitor |
+| Anzeige (Erweitern/Duplizieren/Nur …) | keine (Windows) |
+| Fernbedienung light | `remote_input.enabled: true` am Agenten **und** `confirm_pin` im Add-on, siehe „Fernbedienung“ |
 | Zwischenablage vom PC holen | `clipboard.allow_read: true` |
 | Job-Abbruch | die Tools (SIG, MediaAI) über `ai-core` mit `aicore.pcc` |
 
@@ -142,6 +146,10 @@ Nach 5 falschen Eingaben ist die Aktion 5 Minuten gesperrt. Aufwecken, Starten u
 
 Ist `public_url` gesetzt (die Adresse, unter der du die PWA am Handy öffnest), tragen die Meldungen Knöpfe. Sie öffnen die PWA mit einem Befehl im Link (`#do=standby`, `wake`, `cancel-job:<id>`, `tab:<name>`, `scene:<id>`) und `&pc=<PC>`.
 Die PWA fragt vor jeder Aktion einmal bestätigend nach. Sie meldet dich dafür nicht neu an: Das Handy muss bei der PWA angemeldet sein. Auf iOS zeigt Home Assistant keine URI-Knöpfe; dort öffnet das Tippen auf die Meldung die PWA.
+
+## Fernbedienung
+
+Maus und Tastatur des PCs vom Handy (Tab „Steuerung“, Panel „Fernbedienung“): Touchpad (ziehen bewegt, tippen klickt), Klicks, Scrollen, Pfeile/Enter/Esc/Tab und Texteingabe. Bewusst mehrfach abgesichert: am PC standardmäßig **aus** (`remote_input.enabled: true` in der `config.yaml` des Agenten), im Add-on nur mit gesetzter **`confirm_pin`**; jede Sitzung verlangt die PIN, dauert höchstens 15 Minuten (Standard 5) und endet von selbst. Nur Vollzugriff. Öffnen und Beenden stehen im Protokoll (einzelne Eingaben und der getippte Text nicht). Es gibt keine Alt-/Windows-Tasten, Text höchstens 200 Zeichen. Wichtig: Wer das Handy mit offener Sitzung in der Hand hat, steuert den PC.
 
 ## Szenen
 

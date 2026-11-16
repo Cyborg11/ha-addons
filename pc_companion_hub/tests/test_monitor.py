@@ -73,6 +73,7 @@ def issue(i, level="warn", text="Text"):
 
 def test_health_issues_are_announced_once_then_daily_and_clear_when_gone(clock):
     async def steps(n):
+        n.on_health("pc", "PC", [])                                                                      # erste Prüfung nach dem Start (leer)
         n.on_health("pc", "PC", [issue("reboot-pending"), issue("uptime"), issue("disk-full:C:", "bad", "C: voll")])
         n.on_health("pc", "PC", [issue("reboot-pending"), issue("disk-full:C:", "bad", "C: voll")])       # nicht nochmal
         clock.t += 86400 + 5
@@ -84,6 +85,14 @@ def test_health_issues_are_announced_once_then_daily_and_clear_when_gone(clock):
     assert titles.count(("Gesundheit: Hinweis", "PC: Text")) == 3
     assert ("Gesundheit: dringend", "PC: C: voll") in titles and len(sent) == 4                         # „uptime“ wird nie gemeldet
     assert all(m[2].startswith("pcc-pc-health-") for m in sent)
+
+
+def test_the_very_first_check_after_start_only_announces_urgent_issues(clock):
+    async def steps(n):
+        n.on_health("pc", "PC", [issue("reboot-pending"), issue("disk-full:C:", "bad", "C: voll")])
+        n.on_health("pc", "PC", [issue("reboot-pending"), issue("disk-full:C:", "bad", "C: voll")])
+    sent = run({}, steps)
+    assert [m[1] for m in sent] == ["PC: C: voll"]
 
 
 # ---------------------------------------------------------------- Statistik
