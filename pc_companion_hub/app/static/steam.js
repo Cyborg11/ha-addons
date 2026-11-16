@@ -198,7 +198,10 @@
       setTimeout(async () => { await load(true); paintGrid(); if (!$("st_sheet").hidden) paintSheet(); if ($("st_dlbox").open) loadDownloads(); }, 4000);
     } catch (e) { msg.textContent = e.message; }
   };
-  $("st_launch").onclick = () => { const g = games.find(x => x.appid === openId); if (g) launch(g.appid, g.name, false); };
+  $("st_launch").onclick = async () => {
+    const g = games.find(x => x.appid === openId);
+    if (g && (!window.pccGuard || await window.pccGuard("game", g.appid, g.name, "starten"))) launch(g.appid, g.name, false);      // GPU-Konflikt-Wächter
+  };
   $("st_stop").onclick = () => { const g = games.find(x => x.appid === openId); if (g) stopGame(g.appid, g.name); };
 
   /* ---- Downloads & Speicher ---- */

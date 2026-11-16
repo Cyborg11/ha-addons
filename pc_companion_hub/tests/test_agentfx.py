@@ -254,3 +254,21 @@ def test_steam_update_needs_write_rights_is_validated_and_logged(client):
     assert last["pc"] == "ki-pc" and last["path"] == "/api/steam/games/730/update" and last["method"] == "POST"
     raw = json.dumps(client.get("/api/audit", headers=MASTER).json(), ensure_ascii=False)
     assert "Update angestoßen" in raw and "Counter-Strike 2 (730)" in raw
+
+
+# ---- GPU-Konflikt-Wächter (Phase 10.1) ----
+def test_guard_is_readable_by_view_devices_with_a_parameter_whitelist(client):
+    h = {"Authorization": "Bearer " + view_token(client)}
+    assert client.get("/api/guard?for=game&id=730&evil=1&pc=ki-pc", headers=h).status_code == 200
+    last = client.calls[-1]
+    assert last["pc"] == "ki-pc" and last["path"] == "/api/guard" and last["params"] == {"for": "game", "id": "730"}
+    assert client.get("/api/guard", headers=MASTER).headers["cache-control"] == "no-store"
+    assert client.get("/api/guard").status_code == 401
+
+
+def test_guard_rejects_bad_parameters_before_calling_the_agent(client):
+    n = len(client.calls)
+    for q in ("for=bogus", "for=game&id=../x", "for=program&id=a$b", "for=game&id=" + "9" * 90):
+        assert client.get("/api/guard?" + q, headers=MASTER).status_code == 400, q
+    assert len(client.calls) == n
+    assert client.get("/api/guard?for=program&id=comfyui", headers=MASTER).status_code == 200
