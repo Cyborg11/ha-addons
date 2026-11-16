@@ -34,6 +34,7 @@ ALLOWED_ACTIONS = {
     "media_play_pause", "media_next", "media_prev", "open_url", "clipboard_set", "monitor_off",
 }
 SAFE_ID = re.compile(r"[A-Za-z0-9._:-]{1,80}")
+CRITICAL_ACTIONS = {"shutdown", "restart", "sleep", "standby"}        # mit confirm_pin nur mit PIN
 # Abfrageparameter, die je Funktion an den Agenten weitergereicht werden dürfen
 API_LOCK_AFTER = 20        # falsche Bearer-Token je Adresse, dann 15 Minuten Sperre
 API_GLOBAL_LIMIT = 300     # insgesamt pro Stunde
@@ -117,6 +118,7 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     limiter = auth.Limiter()
     # Falsche Bearer-Token an der API (Ausprobieren des ui_token): großzügiger als bei der PIN, weil ein abgemeldetes Gerät
     # ein paar Mal anklopft, bevor es zur Anmeldung wechselt.
+    pin_limiter = auth.Limiter(lock_after=5, lock_s=300, global_limit=60)            # falsche Sicherheits-PINs: nach 5 Fehlern 5 Minuten Sperre
     api_limiter = auth.Limiter(lock_after=API_LOCK_AFTER, lock_s=auth.LOCK_S, global_limit=API_GLOBAL_LIMIT)
     ws_devices: dict[WebSocket, str] = {}
     audit = audit_mod.AuditLog(data_dir / "audit.log")
@@ -224,6 +226,28 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         await require_ui_token(request, authorization)
         if request.state.principal.get("role") != "full":
             raise HTTPException(status_code=403, detail="Dieses Gerät darf nur ansehen")
+
+    confirm_pin = str(opts.get("confirm_pin") or "")
+    if confirm_pin and len(confirm_pin) < 4:
+        log.warning("confirm_pin hat weniger als 4 Zeichen – besser eine längere PIN wählen.")
+
+    def require_pin(request: Request) -> None:
+        """Sicherheits-PIN für kritische Aktionen (Option confirm_pin). Ohne die Option passiert nichts.
+        428 = PIN fehlt (die PWA fragt sie ab und wiederholt), 403 = falsch (zählt), 429 = gesperrt."""
+        if not confirm_pin:
+            return
+        ip = client_ip(request)
+        wait = pin_limiter.wait_s(ip)
+        if wait:
+            raise HTTPException(status_code=429, detail="Zu viele falsche PINs.", headers={"Retry-After": str(wait)})
+        given = request.headers.get("x-confirm-pin")
+        if given is None:
+            raise HTTPException(status_code=428, detail="PIN erforderlich")
+        if not token_ok(confirm_pin, given):
+            pin_limiter.fail(ip)
+            record(request, "Falsche Sicherheits-PIN", detail=request.url.path[:80], ok=False)
+            raise HTTPException(status_code=403, detail="PIN falsch")
+        pin_limiter.ok(ip)
 
     def login_response(name: str, role: str = "full") -> dict:
         dev, token = devices.create(name, role)
@@ -383,6 +407,8 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     async def program_op(pid: str, op: str, request: Request, hub: Hub = Depends(get_hub)):
         if op not in ("start", "stop"):
             raise HTTPException(status_code=404, detail="unbekannte Operation")
+        if op == "stop":
+            require_pin(request)
         return await relay(request, hub, "POST", f"/api/programs/{safe_id(pid)}/{op}", what=f"Programm {'gestartet' if op == 'start' else 'beendet'}",
                            detail=pid, timeout=20.0)
 
@@ -396,6 +422,7 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
 
     @app.post("/api/processes/{pid}/kill", dependencies=[Depends(require_write)])
     async def process_kill(pid: int, request: Request, hub: Hub = Depends(get_hub)):
+        require_pin(request)
         return await relay(request, hub, "POST", f"/api/processes/{pid}/kill", what="Prozess beendet", detail=f"PID {pid}", timeout=20.0)
 
     @app.get("/api/gallery", dependencies=[Depends(require_ui_token)])
@@ -526,6 +553,7 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     @app.post("/api/steam/games/{appid}/stop", dependencies=[Depends(require_write)])
     async def steam_stop(appid: int, request: Request, hub: Hub = Depends(get_hub)):
         steam_appid(appid)
+        require_pin(request)
         return await relay(request, hub, "POST", f"/api/steam/games/{appid}/stop", what="Spiel beendet",
                            detail=await steam_label(hub, appid), timeout=25.0)
 
@@ -637,6 +665,8 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     @app.post("/api/scenes/{sid}/run", dependencies=[Depends(require_write)])
     async def scene_run(sid: str, request: Request, hub: Hub = Depends(get_hub)):
         scene = scene_or_404(sid)
+        if scenes_mod.is_critical(scene):
+            require_pin(request)
         if scene.get("pc"):                                           # die Szene gehört zu einem bestimmten PC
             if scene["pc"] not in hubs:
                 raise HTTPException(status_code=409, detail="Der PC dieser Szene ist nicht mehr eingerichtet")
@@ -661,6 +691,8 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     async def action(name: str, request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
         if name not in ALLOWED_ACTIONS:
             raise HTTPException(status_code=404, detail="unbekannte Aktion")
+        if name in CRITICAL_ACTIONS:
+            require_pin(request)
         if hub.status != "online":
             raise HTTPException(status_code=409, detail="PC ist nicht online")
         code, data = await hub.agent_action(name, body)

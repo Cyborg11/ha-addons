@@ -364,3 +364,7 @@ body.readonly #scenebox{display:none!important}
 .scenecard.error{border-color:rgba(255,93,108,.6)}.scenecard.cancelled{border-color:rgba(255,180,84,.55)}
 .scstep{font-size:13.5px;padding:3px 0;color:var(--dim)}.scstep.running{color:var(--fg);font-weight:600}.scstep.ok{color:var(--ok)}.scstep.error{color:var(--crit)}.scstep small{color:var(--crit)}
 #scene_run_err{font-size:12.5px;color:var(--crit)}#scene_run_err:empty{display:none}
+
+/* ---- 0.25 Sicherheits-PIN ---- */
+#pin_sheet{z-index:90}.pinbox{max-width:360px;display:block}.pinmain h3{margin:0 0 6px}#pin_input{font-size:22px;letter-spacing:.3em;text-align:center}
+.pinbtns{margin-top:14px;flex-wrap:wrap}#pin_cancel{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}

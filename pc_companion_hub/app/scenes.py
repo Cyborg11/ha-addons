@@ -119,6 +119,12 @@ def _new_id(name: str) -> str:
     return (re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:24] or "szene") + "-" + secrets.token_hex(3)
 
 
+def is_critical(scene: dict) -> bool:
+    """Szene mit Schritten, die ohne Rückfrage Schaden anrichten können (Aus-/Ruhezustand/Neustart, Programme oder Spiele beenden): braucht die Sicherheits-PIN."""
+    return any(s["type"] in ("program_stop", "game_stop") or (s["type"] == "action" and s["name"] in ("shutdown", "restart", "sleep", "standby"))
+               or (s["type"] == "power_plan" and not s.get("cancel")) for s in scene["steps"])
+
+
 def step_label(s: dict) -> str:
     t = s["type"]
     if t == "program_start":
