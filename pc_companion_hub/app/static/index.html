@@ -72,6 +72,10 @@
 <main id="live" hidden>
   <!-- ============ Dashboard ============ -->
   <div class="view" data-view="dash">
+    <div class="panel pad" id="scenebox" hidden>
+      <h3>Szenen</h3>
+      <div id="scene_chips" class="chips"></div>
+    </div>
     <div class="panel job" id="job" hidden>
       <div class="jimg" id="jimg" hidden><img id="jpic" alt="Vorschau"></div>
       <div class="jbody">
@@ -177,6 +181,7 @@
   <div class="view" data-view="ctrl" hidden>
     <div class="seg subnav" id="subnav" role="tablist" aria-label="Steuerung">
       <button class="segbtn" data-sub="control" role="tab">Steuern</button>
+      <button class="segbtn" data-sub="scenes" role="tab">Szenen</button>
       <button class="segbtn" data-sub="tools" role="tab">Werkzeuge</button>
       <button class="segbtn" data-sub="devices" role="tab">Geräte &amp; Protokoll</button>
     </div>
@@ -257,6 +262,14 @@
       <div class="row"><button id="clip_send" class="primary">An PC senden</button><button id="clip_get" hidden>Vom PC holen</button></div>
       <div id="clip_msg"></div>
     </div>
+    </div>
+    <div class="subview" data-sub="scenes" hidden>
+      <div class="panel pad">
+        <h3>Szenen <button id="scene_new" class="primary stctl" type="button">Neue Szene</button></h3>
+        <p class="hint">Eine Szene führt mehrere Schritte nacheinander aus, z. B. ComfyUI beenden, ein Spiel starten und eine Home-Assistant-Szene schalten. Ist der PC aus, wird er vorher aufgeweckt.</p>
+        <div id="scene_list"></div>
+        <p id="scene_empty" class="muted">Noch keine Szene angelegt.</p>
+      </div>
     </div>
     <div class="subview" data-sub="devices" hidden>
     <div class="panel pad" id="notifypanel">
@@ -390,6 +403,28 @@
   </div>
 </div>
 
+<div id="sc_sheet" class="sheet" hidden>
+  <div class="sheetbox scbox" role="dialog" aria-modal="true" aria-labelledby="sc_title">
+    <div class="scmain">
+      <h3 id="sc_title"></h3>
+      <div class="row"><label class="scf" style="flex:1"><span>Name</span><input id="sc_name" maxlength="40" placeholder="z. B. Zocken"></label>
+        <label class="scf" style="width:84px"><span>Symbol</span><input id="sc_icon" maxlength="4" placeholder="🎮"></label></div>
+      <label class="chk"><input type="checkbox" id="sc_wake"> PC bei Bedarf aufwecken</label>
+      <div id="sc_steps"></div>
+      <p id="sc_empty_steps" class="muted">Noch keine Schritte.</p>
+      <div class="row"><select id="sc_add" aria-label="Schritt-Typ"></select><button id="sc_add_btn" type="button">Schritt hinzufügen</button></div>
+      <div id="sc_msg" class="muted"></div>
+      <div class="row scbtns"><button id="sc_save" class="primary" type="button">Speichern</button><button id="sc_cancel" type="button">Abbrechen</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="scene_run" class="scenecard" hidden>
+  <div class="schead"><b id="scene_run_title"></b><span><button id="scene_run_cancel" type="button" hidden>Abbrechen</button><button id="scene_run_close" type="button" hidden>Schließen</button></span></div>
+  <div id="scene_run_steps"></div>
+  <div id="scene_run_err" class="muted"></div>
+</div>
+
 <div id="guard_sheet" class="sheet" hidden>
   <div class="sheetbox guardbox" role="dialog" aria-modal="true" aria-labelledby="guard_title">
     <div class="guardmain">
@@ -433,6 +468,7 @@
 
 <script src="app.js"></script>
 <script src="guard.js"></script>
+<script src="scenes.js"></script>
 <script src="actions.js"></script>
 <script src="upload.js"></script>
 <script src="devices.js"></script>

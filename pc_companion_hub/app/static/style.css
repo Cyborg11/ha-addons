@@ -348,3 +348,19 @@ body.readonly .offgames{display:none!important}
 .guardbtns{margin-top:14px;flex-wrap:wrap}#guard_msg{margin-top:8px;font-size:13px}
 #guard_cancel{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
 #guard_sheet{z-index:75}
+
+/* ---- 0.23 Szenen ---- */
+body.readonly #scenebox{display:none!important}
+#scene_chips{display:flex;flex-wrap:wrap;gap:8px}
+#scene_chips .chip{min-height:44px;padding:8px 16px}
+.scbox{max-width:620px;display:block}.scmain h3{margin:0 0 10px}
+.scf{display:flex;flex-direction:column;gap:4px;margin:8px 0;font-size:12.5px;color:var(--dim)}.scf input,.scf select{font-size:14px}
+.scrow{margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.03)}
+.schead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.scbtn{min-width:36px;min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.05)}.scbtn:disabled{opacity:.35}
+.scbtns{margin-top:14px}#sc_msg{margin-top:8px;font-size:13px}
+#sc_add{flex:1}#sc_add_btn,#sc_cancel,#scene_run_cancel,#scene_run_close{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-height:44px}
+.scenecard{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:50;width:min(94vw,520px);padding:12px 14px;border-radius:16px;background:#0d141b;border:1px solid rgba(52,232,164,.45);box-shadow:0 10px 32px rgba(0,0,0,.55)}
+.scenecard.error{border-color:rgba(255,93,108,.6)}.scenecard.cancelled{border-color:rgba(255,180,84,.55)}
+.scstep{font-size:13.5px;padding:3px 0;color:var(--dim)}.scstep.running{color:var(--fg);font-weight:600}.scstep.ok{color:var(--ok)}.scstep.error{color:var(--crit)}.scstep small{color:var(--crit)}
+#scene_run_err{font-size:12.5px;color:var(--crit)}#scene_run_err:empty{display:none}

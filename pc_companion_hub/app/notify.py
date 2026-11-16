@@ -59,6 +59,21 @@ class HaNotifier:
         return True, "gesendet"
 
 
+    async def activate_scene(self, entity_id: str) -> tuple[bool, str]:
+        """Aktiviert eine Home-Assistant-Szene (nur ``scene.<name>``, nur ``scene.turn_on``)."""
+        if not re.fullmatch(r"scene\.[a-z0-9_]{1,64}", entity_id or ""):
+            return False, "ungültige Szene"
+        if not self.token:
+            return False, "Kein Supervisor-Token – die Home-Assistant-API ist nur im laufenden Add-on erreichbar"
+        try:
+            async with httpx.AsyncClient(timeout=10.0, transport=self.transport) as client:
+                r = await client.post(f"{self.base}/services/scene/turn_on", json={"entity_id": entity_id},
+                                      headers={"Authorization": f"Bearer {self.token}"})
+        except Exception as e:                                       # noqa: BLE001
+            return False, f"Home Assistant nicht erreichbar: {e.__class__.__name__}"
+        return (True, "") if r.status_code < 300 else (False, f"Home Assistant antwortete {r.status_code} (Szene {entity_id} vorhanden?)")
+
+
 class Notifier:
     """Erkennt Ereignisse (Job fertig, PC online/offline, GPU zu heiß) und löst Nachrichten aus."""
 

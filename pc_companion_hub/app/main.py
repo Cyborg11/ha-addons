@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import audit as audit_mod, auth, history as history_mod, logredact, notify as notify_mod
 from .hub import Hub
+from . import scenes as scenes_mod
 from .wol import send_magic_packet
 
 try:                                     # QR-Code der Kopplung; ohne segno bleibt der Link zum Abtippen
@@ -587,6 +588,74 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         send_wake(hub)
         record(request, "PC aufgeweckt", pc=hub.name or hub.pc_id)
         return {"ok": True, "status": hub.status}
+
+    # ---- Szenen (Phase 10.2) ----
+    scene_store = scenes_mod.SceneStore(data_dir / "scenes.json")
+    scene_runner = scenes_mod.SceneRunner(ha, audit, send_wake)
+    app_tasks: set = set()
+
+    def scene_or_404(sid: str) -> dict:
+        scene = scene_store.get(sid) if scenes_mod.SAFE_ID.fullmatch(sid) else None
+        if not scene:
+            raise HTTPException(status_code=404, detail="unbekannte Szene")
+        return scene
+
+    def scene_error(e: scenes_mod.SceneError):
+        raise HTTPException(status_code=400, detail=str(e))
+
+    @app.get("/api/scenes", dependencies=[Depends(require_ui_token)])
+    def scenes_list():
+        return {"scenes": scene_store.list(), "limits": {"max_scenes": scenes_mod.MAX_SCENES, "max_steps": scenes_mod.MAX_STEPS, "max_wait_s": scenes_mod.MAX_WAIT_S,
+                                                          "actions": list(scenes_mod.SCENE_ACTIONS), "ha_configured": bool(ha.token)}}
+
+    @app.post("/api/scenes", dependencies=[Depends(require_write)])
+    def scene_create(request: Request, body: dict | None = Body(default=None)):
+        try:
+            scene = scene_store.create(body)
+        except scenes_mod.SceneError as e:
+            scene_error(e)
+        record(request, "Szene angelegt", detail=scene["name"])
+        return scene
+
+    @app.put("/api/scenes/{sid}", dependencies=[Depends(require_write)])
+    def scene_update(sid: str, request: Request, body: dict | None = Body(default=None)):
+        scene_or_404(sid)
+        try:
+            scene = scene_store.replace(sid, body)
+        except scenes_mod.SceneError as e:
+            scene_error(e)
+        record(request, "Szene geändert", detail=scene["name"])
+        return scene
+
+    @app.delete("/api/scenes/{sid}", dependencies=[Depends(require_write)])
+    def scene_delete(sid: str, request: Request):
+        scene = scene_or_404(sid)
+        scene_store.delete(sid)
+        record(request, "Szene gelöscht", detail=scene["name"])
+        return {"ok": True}
+
+    @app.post("/api/scenes/{sid}/run", dependencies=[Depends(require_write)])
+    async def scene_run(sid: str, request: Request, hub: Hub = Depends(get_hub)):
+        scene = scene_or_404(sid)
+        if scene.get("pc"):                                           # die Szene gehört zu einem bestimmten PC
+            if scene["pc"] not in hubs:
+                raise HTTPException(status_code=409, detail="Der PC dieser Szene ist nicht mehr eingerichtet")
+            hub = hubs[scene["pc"]]
+        try:
+            scene_runner.start(hub, scene, who_label(getattr(request.state, "principal", None)))
+        except scenes_mod.SceneError as e:
+            raise HTTPException(status_code=409, detail=str(e))
+        task = asyncio.create_task(scene_runner.run(hub, scene, who_label(getattr(request.state, "principal", None))))
+        app_tasks.add(task)
+        task.add_done_callback(app_tasks.discard)
+        return JSONResponse({"started": True, "scene": scene["id"], "pc": hub.pc_id}, status_code=202)
+
+    @app.post("/api/scenes/cancel", dependencies=[Depends(require_write)])
+    async def scene_cancel(request: Request, hub: Hub = Depends(get_hub)):
+        cancelled = await scene_runner.cancel(hub)
+        if cancelled:
+            record(request, "Szene abgebrochen (angefordert)", pc=hub.name or hub.pc_id, detail=hub.scene_run["name"])
+        return {"ok": True, "cancelled": cancelled}
 
     @app.post("/api/action/{name}", dependencies=[Depends(require_write)])
     async def action(name: str, request: Request, body: dict | None = Body(default=None), hub: Hub = Depends(get_hub)):
