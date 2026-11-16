@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.0
+Phase 10.5: Zeitpläne.
+- Unter **Steuerung → Automatik** (vorher „Szenen“) legst du Zeitpläne an: Wochentage und Uhrzeit, dazu eine Aktion – **PC aufwecken**, **Szene ausführen** oder **PC ausschalten, wenn nichts läuft** (Energiesparmodus, Ruhezustand oder Herunterfahren).
+- Die Ausführung macht der Hub, auch wenn der PC aus ist. „Wenn nichts läuft“ bedeutet: kein KI-Job, kein Spiel, keine Szene, GPU unter 15 % und CPU unter 40 % für die eingestellte Ruhezeit; läuft innerhalb des Zeitfensters etwas, wird nicht ausgeschaltet und das steht im Protokoll.
+- „Nächsten Lauf überspringen“ (für „heute nicht“), An/Aus je Zeitplan, Anzeige des nächsten Laufs. **Verpasste Läufe werden nicht nachgeholt**, auch nicht nach einem Neustart des Hubs; derselbe Zeitplan läuft nie zweimal am Tag.
+- Zeitzone aus der neuen Option `timezone` (z. B. `Europe/Berlin`), sonst aus der Umgebung des Add-ons bzw. des Rechners.
+- Mit gesetzter `confirm_pin` brauchen Zeitpläne, die den PC ausschalten, die PIN beim Anlegen und Ändern.
+
 ## 0.25.0
 Phase 10.4: Sicherheits-PIN und App-Verknüpfungen.
 - **Sicherheits-PIN** (neue Add-on-Option `confirm_pin`): Kritische Aktionen verlangen eine PIN – Herunterfahren, Neustart, Ruhezustand, Energiesparmodus, Prozess beenden, Programm beenden, Spiel beenden und Szenen mit solchen Schritten (auch Energie-Plan-Schritte). Die PWA fragt sie ab (maskierte Eingabe), der Hub prüft sie. Die PIN wird nie gespeichert und nur 60 Sekunden im Speicher gehalten. Nach 5 falschen Eingaben 5 Minuten Sperre; falsche PINs stehen im Protokoll. Schützt vor versehentlichem Tippen und vor einem entsperrten, fremd benutzten Handy. Ohne die Option ändert sich nichts.

@@ -116,6 +116,14 @@ Das Master-Dashboard aus ai-core lauscht laut `master.json` auf der Tailscale-Ad
 
 BIOS „Wake on LAN“ aktivieren · Netzwerkadapter: „Nur Magic Packet“ · Windows-Schnellstart aus · LAN-Kabel · MAC notieren.
 
+## Zeitpläne
+
+Unter **Steuerung → Automatik** legst du zeitgesteuerte Aktionen an (höchstens 30): Wochentage und Uhrzeit, dann *PC aufwecken*, *Szene ausführen* oder *PC ausschalten, wenn nichts läuft*.
+Der Hub führt sie aus, auch bei ausgeschaltetem PC. Die Uhrzeit gilt in der Zeitzone aus der Option `timezone` (z. B. `Europe/Berlin`); ohne Angabe nimmt der Hub die Zeitzone des Add-ons.
+Ein Zeitplan löst nur in den ersten Minuten ab seiner Uhrzeit aus: Wer den Hub um 07:30 nicht laufen hatte, bekommt den Lauf **nicht** nachträglich. „Nächsten Lauf überspringen“ gilt genau einmal.
+„Ausschalten, wenn nichts läuft“ wartet bis zu *Zeitfenster* Minuten auf eine Ruhezeit (kein KI-Job, Spiel oder Szene, GPU < 15 %, CPU < 40 %) und schaltet dann per Energiesparmodus, Ruhezustand oder Herunterfahren aus.
+Jeder Lauf und jede Auslassung steht im Protokoll („Zeitplan: …“).
+
 ## Sicherheits-PIN
 
 Mit `confirm_pin` im Add-on verlangen kritische Aktionen eine zusätzliche PIN: Herunterfahren, Neustart, Ruhezustand, Energiesparmodus, Prozess beenden, Programm beenden, Spiel beenden und Szenen mit solchen Schritten.
@@ -129,7 +137,7 @@ Die PWA fragt vor jeder Aktion einmal bestätigend nach. Sie meldet dich dafür 
 
 ## Szenen
 
-Unter **Steuerung → Szenen** legst du Abfolgen an („Zocken“, „Über Nacht rendern“). Jeder Schritt ist ein fester Baustein: Programm/Spiel starten oder beenden, PC-Aktion, Energie-Plan,
+Unter **Steuerung → Automatik** legst du Abfolgen an („Zocken“, „Über Nacht rendern“). Jeder Schritt ist ein fester Baustein: Programm/Spiel starten oder beenden, PC-Aktion, Energie-Plan,
 Home-Assistant-Szene (`scene.<name>`, braucht die Home-Assistant-Anbindung des Add-ons), Warten (bis 300 s), Nachricht senden. Die Szenen liegen im Hub (`/data/scenes.json`), höchstens 20 mit je 30 Schritten.
 Beim Ausführen zeigt eine Karte den Fortschritt; schlägt ein Schritt fehl, stoppt die Szene (die übrigen Schritte werden übersprungen). „PC bei Bedarf aufwecken“ sendet das Magic Packet und wartet auf den Agenten
 (Zeiten wie bei „Aufwecken und starten“). Nur Geräte mit Vollzugriff dürfen Szenen sehen und ausführen; Nur-Ansicht-Geräte sehen sie nicht auf dem Dashboard.
