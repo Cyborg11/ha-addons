@@ -19,7 +19,8 @@ MAX_SCENES = 20
 MAX_STEPS = 30
 MAX_WAIT_S = 300
 # Aktionen des Agenten, die eine Szene auslösen darf (ohne Neustart des Agenten, Zwischenablage und freie URLs)
-SCENE_ACTIONS = ("lock", "sleep", "standby", "shutdown", "restart", "monitor_off", "mute", "volume", "media_play_pause", "media_next", "media_prev")
+DISPLAY_MODES = ("internal", "external", "clone", "extend")
+SCENE_ACTIONS = ("lock", "sleep", "standby", "shutdown", "restart", "monitor_off", "display", "mute", "volume", "media_play_pause", "media_next", "media_prev")
 POWER_MODES = ("shutdown", "sleep", "standby")
 STEP_TYPES = ("program_start", "program_stop", "game_launch", "game_stop", "action", "power_plan", "ha_scene", "wait", "notify")
 
@@ -71,6 +72,10 @@ def clean_step(raw) -> dict:
         step["name"] = name
         if name == "volume":
             step["level"] = _int(raw.get("level"), 0, 100, "Lautstärke")
+        if name == "display":
+            if raw.get("mode") not in DISPLAY_MODES:
+                raise SceneError("Anzeigemodus muss internal, external, clone oder extend sein")
+            step["mode"] = raw["mode"]
     elif t == "power_plan":
         if raw.get("cancel") is True:
             step["cancel"] = True
@@ -324,7 +329,7 @@ class SceneRunner:
                 ok, msg, code = await self._call(hub, "POST", f"/api/steam/games/{s['appid']}/stop", None, 30.0)
                 return (ok or code == 409), "" if ok or code == 409 else msg          # läuft nicht: nichts zu beenden, kein Fehler
             if t == "action":
-                code, data = await hub.agent_action(s["name"], {"level": s["level"]} if s["name"] == "volume" else None)
+                code, data = await hub.agent_action(s["name"], {"level": s["level"]} if s["name"] == "volume" else {"mode": s["mode"]} if s["name"] == "display" else None)
                 return code < 300, "" if code < 300 else str((data or {}).get("detail") or f"Fehler {code}")[:160]
             if t == "power_plan":
                 if s.get("cancel"):

@@ -400,3 +400,10 @@ def test_ha_activation_only_touches_scene_turn_on():
         assert asyncio.run(ha.activate_scene(bad))[0] is False
     assert len(seen) == 1
     assert asyncio.run(HaNotifier("", None).activate_scene("scene.x"))[0] is False                       # ohne Token nichts senden
+
+
+def test_display_profile_step_needs_a_valid_mode():
+    assert sc.clean_step({"type": "action", "name": "display", "mode": "external"}) == {"type": "action", "name": "display", "mode": "external"}
+    for bad in ({"type": "action", "name": "display"}, {"type": "action", "name": "display", "mode": "mirror"}):
+        with pytest.raises(sc.SceneError):
+            sc.clean_step(bad)
