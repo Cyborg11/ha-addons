@@ -13,5 +13,10 @@
     "enctype": "multipart/form-data",
     "params": { "files": [{ "name": "files", "accept": ["*/*"] }] }
   },
-  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }],
+  "shortcuts": [
+    { "name": "PC aufwecken", "short_name": "Aufwecken", "url": "./#do=wake", "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Energiesparmodus", "short_name": "Standby", "url": "./#do=standby", "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Spiele", "short_name": "Spiele", "url": "./#do=tab:steam", "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+  ]
 }

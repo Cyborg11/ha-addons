@@ -403,6 +403,17 @@
   </div>
 </div>
 
+<div id="pin_sheet" class="sheet" hidden>
+  <div class="sheetbox pinbox" role="dialog" aria-modal="true" aria-labelledby="pin_title">
+    <div class="pinmain">
+      <h3 id="pin_title">Sicherheits-PIN</h3>
+      <p id="pin_msg" class="hint"></p>
+      <input id="pin_input" type="password" inputmode="numeric" autocomplete="off" aria-label="PIN">
+      <div class="row pinbtns"><button id="pin_ok" class="primary" type="button">Bestätigen</button><button id="pin_cancel" type="button">Abbrechen</button></div>
+    </div>
+  </div>
+</div>
+
 <div id="sc_sheet" class="sheet" hidden>
   <div class="sheetbox scbox" role="dialog" aria-modal="true" aria-labelledby="sc_title">
     <div class="scmain">
@@ -467,6 +478,7 @@
 </div>
 
 <script src="app.js"></script>
+<script src="pin.js"></script>
 <script src="guard.js"></script>
 <script src="scenes.js"></script>
 <script src="deeplink.js"></script>

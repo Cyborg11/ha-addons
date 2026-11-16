@@ -116,6 +116,12 @@ Das Master-Dashboard aus ai-core lauscht laut `master.json` auf der Tailscale-Ad
 
 BIOS „Wake on LAN“ aktivieren · Netzwerkadapter: „Nur Magic Packet“ · Windows-Schnellstart aus · LAN-Kabel · MAC notieren.
 
+## Sicherheits-PIN
+
+Mit `confirm_pin` im Add-on verlangen kritische Aktionen eine zusätzliche PIN: Herunterfahren, Neustart, Ruhezustand, Energiesparmodus, Prozess beenden, Programm beenden, Spiel beenden und Szenen mit solchen Schritten.
+Die PWA fragt die PIN ab; der Hub prüft sie (der Browser könnte sie nicht umgehen). Die PIN steht nur im Hub und im Gedächtnis der Seite für 60 Sekunden; sie ist unabhängig von `pin` (Anmeldung) und `ui_token`.
+Nach 5 falschen Eingaben ist die Aktion 5 Minuten gesperrt. Aufwecken, Starten und Lautstärke brauchen keine PIN.
+
 ## Benachrichtigungen mit Aktionen
 
 Ist `public_url` gesetzt (die Adresse, unter der du die PWA am Handy öffnest), tragen die Meldungen Knöpfe. Sie öffnen die PWA mit einem Befehl im Link (`#do=standby`, `wake`, `cancel-job:<id>`, `tab:<name>`, `scene:<id>`) und `&pc=<PC>`.

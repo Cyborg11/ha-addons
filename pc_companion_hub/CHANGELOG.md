@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.25.0
+Phase 10.4: Sicherheits-PIN und App-Verknüpfungen.
+- **Sicherheits-PIN** (neue Add-on-Option `confirm_pin`): Kritische Aktionen verlangen eine PIN – Herunterfahren, Neustart, Ruhezustand, Energiesparmodus, Prozess beenden, Programm beenden, Spiel beenden und Szenen mit solchen Schritten (auch Energie-Plan-Schritte). Die PWA fragt sie ab (maskierte Eingabe), der Hub prüft sie. Die PIN wird nie gespeichert und nur 60 Sekunden im Speicher gehalten. Nach 5 falschen Eingaben 5 Minuten Sperre; falsche PINs stehen im Protokoll. Schützt vor versehentlichem Tippen und vor einem entsperrten, fremd benutzten Handy. Ohne die Option ändert sich nichts.
+- **App-Verknüpfungen:** Langes Drücken auf das App-Symbol (Android/Chrome) bietet „PC aufwecken“, „Energiesparmodus“ und „Spiele“. Sie nutzen die Deep-Links aus 0.24.0, also mit Rückfrage und – falls gesetzt – PIN.
+
 ## 0.24.0
 Phase 10.3: Benachrichtigungen mit Aktionen.
 - Die Home-Assistant-Meldungen bekommen **Knöpfe** (Android zeigt sie unter der Meldung; Tippen auf die Meldung öffnet die PWA): *KI-Job fertig* → „Energiesparmodus“ und „Galerie“, *GPU sehr heiß* → „Job abbrechen“ (wenn ein Job läuft) und „Dashboard“, *PC ist offline* → „Aufwecken“, *PC ist online* → „Dashboard“.
