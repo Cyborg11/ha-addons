@@ -580,10 +580,23 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         return {"ok": True, "cancelled": cancelled}
 
     @app.post("/api/steam/games/{appid}/update", dependencies=[Depends(require_write)])
-    async def steam_update(appid: int, request: Request, hub: Hub = Depends(get_hub)):
+    async def steam_update(appid: int, request: Request, then: str = "", name: str = "", hub: Hub = Depends(get_hub)):
         steam_appid(appid)
-        return await relay(request, hub, "POST", f"/api/steam/games/{appid}/update", what="Update angestoßen",
+        resp = await relay(request, hub, "POST", f"/api/steam/games/{appid}/update", what="Update angestoßen",
                            detail=await steam_label(hub, appid), timeout=20.0)
+        if then == "launch" and resp.status_code < 300:
+            shown = clean_name(name) or f"AppID {appid}"
+            hub.queue_update_launch(appid, shown)
+            record(request, "Update, danach starten", pc=hub.name or hub.pc_id, detail=f"{shown} ({appid})")
+        return resp
+
+    @app.delete("/api/steam/games/{appid}/update", dependencies=[Depends(require_write)])
+    async def steam_update_cancel(appid: int, request: Request, hub: Hub = Depends(get_hub)):
+        steam_appid(appid)
+        cancelled = hub.cancel_update_launch(appid)
+        if cancelled:
+            record(request, "Start nach Update abgebrochen", pc=hub.name or hub.pc_id, detail=f"AppID {appid}")
+        return {"ok": True, "cancelled": cancelled}
 
     @app.post("/api/steam/games/{appid}/stop", dependencies=[Depends(require_write)])
     async def steam_stop(appid: int, request: Request, hub: Hub = Depends(get_hub)):

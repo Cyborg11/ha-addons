@@ -283,3 +283,80 @@ def test_standby_action_is_allowed_and_expected_to_take_the_pc_offline(client, m
     h.agent_action = fake_action
     assert client.post("/api/action/standby", headers=MASTER).status_code == 200 and seen == ["standby"]
     assert client.post("/api/action/format_c", headers=MASTER).status_code == 404
+
+
+# ---------------------------------------------------------------- Update, danach starten (Phase 10.8)
+def utick(h):
+    asyncio.run(h._update_tick())
+
+
+def game(state):
+    return (200, {"appid": 730, "state": state})
+
+
+def test_update_then_launch_waits_for_the_update_and_starts_once(rig):
+    clock, h, calls, results, answers = rig
+    h.status, h.features = "online", ["steam"]
+    h.queue_update_launch(730, "CS2")
+    assert h.message()["pending_update"]["appid"] == 730
+    answers += [game("updating")]
+    utick(h)
+    assert calls == [("GET", "/api/steam/games/730", None)] and h.pending_update["seen"] is True
+    utick(h)
+    assert len(calls) == 1                                                                              # erst nach dem Abstand wieder
+    clock.t += 10
+    answers += [game("updating")]
+    utick(h)
+    assert len(calls) == 2 and h.pending_update
+    clock.t += 10
+    answers += [game("installed"), (200, {"ok": True})]
+    utick(h)
+    assert calls[-1] == ("POST", "/api/steam/games/730/launch", {"force": False})
+    assert h.pending_update is None and results[-1]["ok"] is True and "gestartet" in results[-1]["message"]
+    clock.t += 10
+    utick(h)
+    assert len(calls) == 4                                                                              # nichts mehr
+
+
+def test_update_then_launch_failures_and_cancel(rig):
+    clock, h, calls, results, answers = rig
+    h.status, h.features = "online", ["steam"]
+    h.queue_update_launch(730, "CS2")
+    answers += [game("update_required")]
+    utick(h)
+    assert h.pending_update and not results                                                             # Steam hat noch nicht begonnen: weiter warten
+    clock.t += 200
+    answers += [game("update_required")]
+    utick(h)
+    assert results[-1]["ok"] is False and "nicht begonnen" in results[-1]["message"]
+    h.queue_update_launch(730, "CS2")
+    clock.t += 40
+    answers += [game("installed"), (409, {"detail": "Es läuft bereits ein anderes Spiel: Z"})]           # schon aktuell: nach 30 s starten
+    utick(h)
+    assert results[-1]["ok"] is False and "anderes Spiel" in results[-1]["message"]
+    h.queue_update_launch(5, "A")
+    assert h.cancel_update_launch(6) is False and h.cancel_update_launch(5) is True and h.public_update() is None
+    h.queue_update_launch(5, "A")
+    clock.t += 7 * 3600
+    utick(h)
+    assert "zu lange" in results[-1]["message"]
+    h.status = "offline"
+    h.queue_update_launch(5, "A")
+    n = len(calls)
+    utick(h)
+    assert len(calls) == n and h.pending_update                                                         # PC aus: wartet, fragt nicht
+
+
+def test_update_endpoint_queues_only_with_then_launch_and_cancels(client):
+    h = hub_of(client)
+    h.status, h.features = "online", ["steam"]
+    assert client.post("/api/steam/games/730/update", headers=MASTER).status_code == 200
+    assert h.pending_update is None
+    r = client.post("/api/steam/games/730/update?then=launch&name=Counter-Strike%202", headers=MASTER)
+    assert r.status_code == 200 and h.pending_update["name"] == "Counter-Strike 2"
+    assert client.get("/api/status", headers=MASTER).json()["pending_update"]["appid"] == 730
+    raw = json.dumps(client.get("/api/audit", headers=MASTER).json(), ensure_ascii=False)
+    assert "Update, danach starten" in raw
+    assert client.delete("/api/steam/games/730/update", headers=MASTER).json()["cancelled"] is True
+    assert h.pending_update is None
+    assert client.delete("/api/steam/games/730/update", headers={"Authorization": "Bearer " + view_token(client)}).status_code == 403

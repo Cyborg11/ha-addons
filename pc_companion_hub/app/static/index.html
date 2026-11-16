@@ -350,6 +350,7 @@
       <div class="row">
         <input id="st_q" type="search" placeholder="Suchen …" aria-label="Spiel suchen" autocomplete="off">
         <select id="st_sort" aria-label="Sortierung"><option value="recent">Zuletzt gespielt</option><option value="name">Name</option><option value="size">Größe</option></select>
+        <button id="st_random" title="Öffnet ein zufälliges Spiel, bevorzugt eines mit wenig Spielzeit">Zufallsspiel</button>
         <button id="st_reload">Aktualisieren</button>
       </div>
       <div id="st_dl" class="hint" hidden></div>
@@ -496,6 +497,7 @@
       <div class="row">
         <button id="st_launch" class="primary stctl">Starten</button>
         <button id="st_update" class="stctl" hidden>Update laden (prüft Dateien)</button>
+        <button id="st_update_go" class="stctl" hidden>Update laden und danach starten</button>
         <button id="st_art_open" class="stctl">Bilder ändern</button>
         <button id="st_stop" class="danger stctl" hidden>Beenden</button>
         <button id="st_sheet_close">Schließen</button>

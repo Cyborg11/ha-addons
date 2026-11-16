@@ -20,6 +20,9 @@ WAKE_MODES = {
 }
 LAUNCH_GRACE_S = 120          # so lange nach Ablauf der Wartezeit darf ein „Aufwecken und starten“ noch auf den Agenten warten
 LAUNCH_RETRY_S = 5            # Abstand der Startversuche, wenn der Agent (noch) nicht antwortet
+UPDATE_POLL_S = 10            # Abstand der Nachfragen, ob das Update eines Spiels fertig ist
+UPDATE_START_S = 180          # so lange darf Steam brauchen, bis das Update überhaupt als „läuft“ erscheint
+UPDATE_MAX_S = 6 * 3600       # längste Wartezeit auf ein Update, danach wird nicht mehr gestartet
 RESULT_SHOW_S = 120           # so lange meldet der Hub das Ergebnis eines Spielstarts an die Oberfläche
 
 
@@ -69,6 +72,7 @@ class Hub:
         self.wake_started: float | None = None
         self.wake_mode, self.wake_timeout, self.launch_delay = wake_params(opts)
         self.pending_launch: dict | None = None   # {"appid","name","since","online_since","next_try"} – Spiel, das nach dem Aufwecken startet
+        self.pending_update: dict | None = None   # {"appid","name","since","seen","next_poll"} – Spiel, das nach seinem Update startet
         self.launch_result: dict | None = None    # {"appid","name","ok","message","at"} des letzten Versuchs
         self.on_launch = None                     # Rückruf(hub, result) beim Ende eines wartenden Spielstarts (Protokoll)
         self.scene_run: dict | None = None        # laufende oder zuletzt beendete Szene (siehe scenes.py)
@@ -94,6 +98,7 @@ class Hub:
             "waking_total": self.wake_timeout,
             "wake_mode": self.wake_mode,
             "pending_launch": self.public_pending(),
+            "pending_update": self.public_update(),
             "launch_result": self.public_result(),
             "scene_run": self.public_scene_run(),
             "last_seen": self.last_seen,
@@ -159,6 +164,70 @@ class Hub:
         if not p:
             return None
         return {"appid": p["appid"], "name": p["name"], "left_s": max(0, round(self.launch_expiry - (self._now() - p["since"])))}
+
+    def queue_update_launch(self, appid: int, name: str) -> None:
+        self.pending_update = {"appid": appid, "name": name, "since": self._now(), "seen": False, "next_poll": 0.0}
+        self.launch_result = None
+
+    def cancel_update_launch(self, appid: int | None = None) -> bool:
+        p = self.pending_update
+        if not p or (appid is not None and p["appid"] != appid):
+            return False
+        self.pending_update = None
+        return True
+
+    def public_update(self) -> dict | None:
+        p = self.pending_update
+        return {"appid": p["appid"], "name": p["name"], "since": p["since"]} if p else None
+
+    def _finish_update(self, ok: bool, message: str) -> None:
+        p = self.pending_update
+        self.pending_update = None
+        if not p:
+            return
+        self.launch_result = {"appid": p["appid"], "name": p["name"], "ok": ok, "message": message, "at": self._now()}
+        if self.on_launch:
+            try:
+                self.on_launch(self, self.launch_result)
+            except Exception:
+                pass
+
+    async def _update_tick(self) -> None:
+        """Wartet, bis Steam das Update fertig hat (Status updating -> installed), und startet das Spiel dann einmal."""
+        p = self.pending_update
+        if not p:
+            return
+        now = self._now()
+        if now - p["since"] > UPDATE_MAX_S:
+            self._finish_update(False, "Das Update dauerte zu lange; das Spiel wurde nicht gestartet.")
+            return
+        if self.status != "online" or "steam" not in self.features or now < p["next_poll"]:
+            return
+        p["next_poll"] = now + UPDATE_POLL_S
+        code, content, _ = await self.agent_request("GET", f"/api/steam/games/{p['appid']}", None, None, 15.0)
+        if code != 200:
+            if code == 404:
+                self._finish_update(False, "Das Spiel wurde nicht mehr gefunden.")
+            return
+        try:
+            state = json.loads(content).get("state")
+        except Exception:
+            return
+        if state in ("updating", "downloading", "paused"):
+            p["seen"] = True
+            return
+        if state == "installed" and (p["seen"] or now - p["since"] >= 30):
+            code, content, _ = await self.agent_request("POST", f"/api/steam/games/{p['appid']}/launch", None, {"force": False}, 20.0)
+            if code == 200:
+                self._finish_update(True, "Update fertig, Spiel gestartet.")
+            else:
+                try:
+                    detail = json.loads(content).get("detail")
+                except Exception:
+                    detail = None
+                self._finish_update(False, "Update fertig, aber der Start wurde abgelehnt: " + str(detail or code)[:160])
+        elif state == "update_required" and not p["seen"] and now - p["since"] > UPDATE_START_S:
+            self._finish_update(False, "Steam hat das Update nicht begonnen. In Steam nachsehen (Anmeldung, Speicherplatz).")
 
     def public_result(self) -> dict | None:
         r = self.launch_result
@@ -241,6 +310,10 @@ class Hub:
         self.status = compute_status(online, self.wake_started, time.time(), self.wake_timeout)
         try:
             await self._launch_tick()
+        except Exception:
+            pass
+        try:
+            await self._update_tick()
         except Exception:
             pass
         if self.on_status:
