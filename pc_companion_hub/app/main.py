@@ -468,6 +468,17 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
     async def gallery_thumb(request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "GET", "/api/gallery/thumb", params=take(request, GALLERY_PARAMS))
 
+    # ---- Dateibrowser (Phase 10.9): nur lesen, wegen privater Dateien nur mit Schreibrecht, Downloads im Protokoll ----
+    @app.get("/api/browse", dependencies=[Depends(require_write)])
+    async def browse_list(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/browse", params=take(request, ("folder", "path")))
+
+    @app.get("/api/browse/file", dependencies=[Depends(require_write)])
+    async def browse_file(request: Request, hub: Hub = Depends(get_hub)):
+        params = take(request, ("folder", "path", "download"))
+        return await relay(request, hub, "GET", "/api/browse/file", params=params, what="Datei geladen",
+                           detail=f"{params.get('folder', '')}/{params.get('path', '')}"[:200], timeout=120.0)
+
     @app.get("/api/gallery/file", dependencies=[Depends(require_ui_token)])
     async def gallery_file(request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "GET", "/api/gallery/file", params=take(request, GALLERY_PARAMS), timeout=60.0)

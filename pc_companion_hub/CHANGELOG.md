@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.0
+Phase 10.9: Dateibrowser (nur lesen).
+- Im Tab „Dateien“ erscheint **Dateien am PC**, sobald der Agent Ordner freigibt (`browse.folders` in dessen `config.yaml`). Ordner durchsuchen, Bilder/PDF/Text ansehen, alles andere und größere Dateien (bis 100 MB) herunterladen.
+- Nur mit Vollzugriff (Nur-Ansicht-Geräte sehen es nicht); jeder Download steht im Protokoll. Löschen, Umbenennen und Hochladen gibt es hier bewusst nicht (Hochladen: „Datei senden“).
+- Benötigt den Agenten mit Feature `browse`.
+
 ## 0.28.0
 Phase 10.8: Steam-Reste.
 - **Update laden und danach starten:** im Spielblatt eines Spiels mit verfügbarem Update. Der Hub stößt das Update an, fragt alle 10 Sekunden den Stand ab und startet das Spiel einmal, sobald Steam fertig ist (jederzeit abbrechbar; das Update läuft dann weiter). Scheitert es (Steam beginnt nicht, anderes Spiel läuft, über 6 Stunden), steht der Grund in der Meldung.
