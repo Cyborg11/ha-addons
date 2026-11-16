@@ -33,7 +33,7 @@ TRUSTED_PROXY_IPS = {"172.30.32.2"}
 STATIC = Path(__file__).parent / "static"
 ALLOWED_ACTIONS = {
     "lock", "sleep", "standby", "shutdown", "restart", "restart_agent", "cancel_shutdown", "volume", "mute",
-    "media_play_pause", "media_next", "media_prev", "open_url", "clipboard_set", "monitor_off",
+    "media_play_pause", "media_next", "media_prev", "open_url", "clipboard_set", "monitor_off", "display",
 }
 SAFE_ID = re.compile(r"[A-Za-z0-9._:-]{1,80}")
 CRITICAL_ACTIONS = {"shutdown", "restart", "sleep", "standby"}        # mit confirm_pin nur mit PIN

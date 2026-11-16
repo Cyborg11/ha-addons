@@ -243,6 +243,16 @@
       <div id="extra_msg"></div>
     </div>
 
+    <div class="panel pad" id="displaypanel" data-feature="display" hidden>
+      <h3>Anzeige <small class="muted">Windows-Anzeigemodus (Win+P)</small></h3>
+      <div class="grid4">
+        <button data-act="display" data-body='{"mode":"extend"}'>Erweitern</button>
+        <button data-act="display" data-body='{"mode":"clone"}'>Duplizieren</button>
+        <button data-act="display" data-body='{"mode":"internal"}' data-confirm="Nur den Hauptbildschirm des PCs nutzen? Ein Fernseher o. Ä. wird dunkel.">Nur PC-Bildschirm</button>
+        <button data-act="display" data-body='{"mode":"external"}' data-confirm="Nur den zweiten Bildschirm (z. B. Fernseher) nutzen? Der PC-Bildschirm wird dunkel.">Nur Zweitbildschirm</button>
+      </div>
+    </div>
+
     <div class="panel pad" id="planpanel" data-feature="power_plan" hidden>
       <h3>Energie-Plan</h3>
       <div id="plan_state" class="muted">Kein Plan aktiv.</div>

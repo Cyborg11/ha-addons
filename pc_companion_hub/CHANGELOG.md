@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.31.0
+Phase 10.10 (Teil 1): Anzeigeprofile.
+- Tab „Steuerung“: Panel **Anzeige** mit Erweitern, Duplizieren, Nur PC-Bildschirm, Nur Zweitbildschirm (`DisplaySwitch.exe`, wie Win+P). Die beiden „Nur …“-Modi fragen nach, weil ein Bildschirm dunkel wird.
+- In Szenen als Aktion **Anzeigeprofil** wählbar (z. B. „Zocken“: Nur Zweitbildschirm).
+- Benötigt den Agenten mit Feature `display` (nur Windows).
+
 ## 0.30.0
 Phase 10.7: Überwachung.
 - Meldung **KI-Job hängt vielleicht**: Fortschritt steht länger als `notify_hang_min` Minuten (Standard 20) still und die GPU ist untätig; mit Knopf „Job abbrechen“. Arbeitet die GPU noch, bleibt es still.

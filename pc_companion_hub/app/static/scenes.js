@@ -4,9 +4,10 @@
 (function () {
   const $ = id => document.getElementById(id);
   const ACTIONS = {
-    lock: "Sperren", sleep: "Ruhezustand", standby: "Energiesparmodus", shutdown: "Herunterfahren", restart: "Neustart", monitor_off: "Bildschirm aus",
+    lock: "Sperren", sleep: "Ruhezustand", standby: "Energiesparmodus", shutdown: "Herunterfahren", restart: "Neustart", monitor_off: "Bildschirm aus", display: "Anzeigeprofil",
     mute: "Stumm schalten", volume: "Lautstärke setzen", media_play_pause: "Wiedergabe/Pause", media_next: "Nächster Titel", media_prev: "Vorheriger Titel",
   };
+  const DISPLAY = { extend: "Erweitern", clone: "Duplizieren", internal: "Nur PC-Bildschirm", external: "Nur Zweitbildschirm" };
   const POWER = { standby: "Energiesparmodus", sleep: "Ruhezustand", shutdown: "Herunterfahren" };
   const TYPES = [
     ["program_stop", "Programm beenden"], ["program_start", "Programm starten"], ["game_launch", "Spiel starten"], ["game_stop", "Spiel beenden"],
@@ -130,8 +131,9 @@
         const w = document.createElement("label"); w.className = "chk"; w.append(c, document.createTextNode(" auch starten, wenn ein anderes Spiel läuft")); out.push(w);
       }
     } else if (t === "action") {
-      out.push(field(select((limits.actions || Object.keys(ACTIONS)).map(a => [a, ACTIONS[a] || a]), st.name || "lock", v => { st.name = v; if (v === "volume" && st.level == null) st.level = 30; if (v !== "volume") delete st.level; render(); }), "Aktion"));
+      out.push(field(select((limits.actions || Object.keys(ACTIONS)).map(a => [a, ACTIONS[a] || a]), st.name || "lock", v => { st.name = v; if (v === "volume" && st.level == null) st.level = 30; if (v !== "volume") delete st.level; if (v === "display" && !st.mode) st.mode = "extend"; if (v !== "display") delete st.mode; render(); }), "Aktion"));
       if (!st.name) st.name = "lock";
+      if (st.name === "display") out.push(field(select(Object.entries(DISPLAY), st.mode || "extend", v => { st.mode = v; }), "Anzeige"));
       if (st.name === "volume") out.push(field(input("number", st.level == null ? 30 : st.level, v => { st.level = v; }, { min: 0, max: 100 }), "Lautstärke (0–100)"));
     } else if (t === "power_plan") {
       const cur = st.cancel ? "cancel" : (st.after_job || "standby");

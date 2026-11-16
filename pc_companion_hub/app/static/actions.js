@@ -23,7 +23,9 @@
     b.onclick = async () => {
       const q = b.dataset.confirm;
       if (q && !confirm(q)) return;
-      const d = await act(b.dataset.act, {}, b.textContent);
+      let body = {};
+      try { if (b.dataset.body) body = JSON.parse(b.dataset.body); } catch (e) { body = {}; }
+      const d = await act(b.dataset.act, body, b.textContent);
       if (d && d.muted !== undefined) msg(d.muted ? "Stumm ✓" : "Ton an ✓");
     };
   });
