@@ -424,6 +424,14 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
             raise HTTPException(status_code=400, detail="ungültige AppID")
         return appid
 
+    @app.get("/api/guard", dependencies=[Depends(require_ui_token)])
+    async def guard_check(request: Request, hub: Hub = Depends(get_hub)):
+        """GPU-Konflikt-Wächter (Phase 10.1): Einschätzung des Agenten vor einem Spiel-/Programmstart (nur lesend)."""
+        params = take(request, ("for", "id"))
+        if params.get("for", "game") not in ("game", "program") or ("id" in params and params["id"] and not SAFE_ID.fullmatch(params["id"])):
+            raise HTTPException(status_code=400, detail="ungültige Angabe")
+        return await relay(request, hub, "GET", "/api/guard", params=params)
+
     @app.get("/api/steam/status", dependencies=[Depends(require_ui_token)])
     async def steam_status(request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "GET", "/api/steam/status")

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.22.0
+Phase 10.1: GPU-Konflikt-Wächter (braucht den Agenten mit Feature `guard`).
+- Vor dem **Start eines Spiels** und vor dem **Start eines Programms** (z. B. ComfyUI) prüft die Oberfläche, ob die GPU belegt ist: laufender KI-Job, laufendes Spiel, ein laufendes Programm, hohe GPU-Last oder viel belegter VRAM. Bei einem Konflikt erscheint ein Dialog mit dem Grund (z. B. „ComfyUI – 13,4 GB VRAM, 97 % Last“).
+- Je Konflikt gibt es „Beenden“ bzw. „Job abbrechen“ (danach wird neu geprüft und der Start läuft weiter, wenn nichts mehr im Weg ist) und immer **„Trotzdem starten“** und „Abbrechen“. Der Wächter verhindert nichts.
+- Ohne Konflikt keine zusätzliche Rückfrage. Schwellen, Abschalten und das Merkmal `gpu: true` für GPU-lastige Programme stehen in der `config.yaml` des Agenten (`guard:`).
+
 ## 0.21.0
 Updates anstoßen (braucht den Agenten mit Phase „Update laden“, Feature `steam_update`).
 - **Update laden:** In der Detailansicht eines Spiels mit „Update“-Schild startet der Knopf „Update laden“ die Dateiprüfung und das Update in Steam, ohne das Spiel zu starten. Am echten PC getestet: ein Update von rund 300 MB war nach etwa 30 Sekunden fertig, ohne Dialog.

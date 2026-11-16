@@ -107,6 +107,7 @@
         btn.textContent = p.running ? "Beenden" : "Starten";
         btn.onclick = async () => {
           if (p.running && !confirm(p.name + " beenden?")) return;
+          if (!p.running && window.pccGuard && !(await window.pccGuard("program", p.id, p.name, "starten"))) return;     // GPU-Konflikt-Wächter
           btn.disabled = true; $("prog_msg").textContent = "…";
           try {
             const res = await call("api/programs/" + encodeURIComponent(p.id) + "/" + (p.running ? "stop" : "start"), "POST");
