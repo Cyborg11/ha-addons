@@ -1,5 +1,5 @@
 name: "PC-Companion Hub"
-version: "0.29.0"
+version: "0.30.0"
 slug: pc_companion_hub
 description: "Dashboard und Wake-on-LAN für den PC-Companion-Agenten (Gaming-PC)"
 url: "https://github.com/Cyborg11/PCCompanion"
@@ -38,6 +38,7 @@ options:
   notify_jobs: true
   notify_pc_state: true
   notify_temp_c: 85
+  notify_hang_min: 20
   public_url: ""
   tools: []
 schema:
@@ -69,6 +70,7 @@ schema:
   notify_jobs: bool?
   notify_pc_state: bool?
   notify_temp_c: int(0,120)?
+  notify_hang_min: int(0,600)?
   public_url: str?
   tools:
     - name: str

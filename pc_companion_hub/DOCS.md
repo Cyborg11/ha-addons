@@ -41,6 +41,8 @@ Der Hub kann dir über die Home-Assistant-Companion-App Nachrichten schicken. Ei
 
 Gemeldet wird: **KI-Job fertig/fehlgeschlagen** (`notify_jobs`), **PC online/offline** (`notify_pc_state`; der Zustand muss 20 s stabil sein, nach einem Herunterfahren oder Ruhezustand über den Hub gibt es keine Offline-Meldung) und **GPU zu heiß** (`notify_temp_c`, Standard 85 °C, 0 schaltet ab; nach 60 s über der Grenze, höchstens alle 30 Minuten). Beim Start des Hubs werden bestehende Zustände und alte Jobs nicht gemeldet.
 
+Überwachung (Phase 10.7): **KI-Job hängt vielleicht** (`notify_hang_min`, Standard 20, 0 schaltet ab): der Job meldet „läuft“, sein Fortschritt steht so lange still und die GPU bleibt unter 5 % Last; arbeitet die GPU noch, wird nicht gemeldet. **Gesundheit** (Agent mit Feature `health`): alle 5 Minuten werden Laufwerke (fast voll, SMART), ausstehender Neustart und LibreHardwareMonitor geprüft; neue Auffälligkeiten kommen als Meldung (dieselbe frühestens nach einem Tag erneut). Beides steht auch in der Karte **Gesundheit & Statistik** auf dem Dashboard, dort mit Spielzeit pro Woche, Job-Dauer im Trend und Auslastung pro Tag (nur Läufe ab etwa 0,2 Wh Strom; Auslastung aus dem 14-Tage-Verlauf).
+
 ## Verlauf
 
 Die Karte „Verlauf“ unten im Dashboard zeigt Kennzahlen über Stunden bis 7 Tage. Der Hub sammelt sie selbst (alle 30 s je PC, 14 Tage lang, `/data/history.db`); es ist keine Änderung am Agenten nötig. Der Verlauf beginnt, sobald das Add-on 0.10.0 läuft. Er überlebt Neustarts und Updates des Add-ons, wird aber mit dem Add-on gelöscht, wenn du es deinstallierst.

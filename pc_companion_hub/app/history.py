@@ -83,6 +83,16 @@ class History:
             row = self.db.execute("SELECT MAX(t) FROM samples WHERE pc = ?", [pc]).fetchone()
         return row[0] if row and row[0] is not None else None
 
+    def raw(self, pc: str, days: float) -> list[tuple]:
+        """Rohe Messpunkte (t, gpu) der letzten Tage für die Statistik."""
+        if self.db is None:
+            return []
+        with self._lock:
+            try:
+                return [(r[0], r[1]) for r in self.db.execute("SELECT t, gpu FROM samples WHERE pc = ? AND t >= ? ORDER BY t", [pc, int(now() - days * 86400)])]
+            except sqlite3.Error:
+                return []
+
     def query(self, pc: str, hours: float) -> dict:
         hours = min(max(hours, 0.25), RETENTION_S / 3600)
         if self.db is None:

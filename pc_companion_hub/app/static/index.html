@@ -156,6 +156,16 @@
         <p class="hint" id="en_note"></p>
       </article>
 
+      <article class="panel card c-energy" id="monbox">
+        <h3><i class="dot net"></i>Gesundheit &amp; Statistik</h3>
+        <div id="mon_issues"></div>
+        <details class="entop"><summary>Laufwerke und System</summary><div id="mon_disks"></div></details>
+        <details class="entop"><summary>Spielzeit pro Woche (8 Wochen)</summary><div id="mon_games"></div></details>
+        <details class="entop"><summary>KI-Jobs: Dauer im Trend</summary><div id="mon_jobs"></div></details>
+        <details class="entop"><summary>Auslastung pro Tag (14 Tage, GPU)</summary><div id="mon_usage"></div></details>
+        <p class="hint">Spiele und Jobs erscheinen ab etwa 0,2 Wh Strom (siehe Strom &amp; Kosten); die Auslastung stammt aus dem 14-Tage-Verlauf.</p>
+      </article>
+
       <article class="panel card c-hist" id="histcard">
         <h3>Verlauf <span class="muted">seit dem Start des Hubs, max. 14 Tage</span></h3>
         <div class="seg" id="h_range"></div>
@@ -532,6 +542,7 @@
 <script src="actions.js"></script>
 <script src="upload.js"></script>
 <script src="browse.js"></script>
+<script src="monitor.js"></script>
 <script src="devices.js"></script>
 <script src="history.js"></script>
 <script src="agentfx.js"></script>

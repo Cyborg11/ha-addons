@@ -15,6 +15,9 @@ STABLE_S = 20              # Zustand muss so lange gelten, bevor „online/offli
 EXPECT_OFF_S = 600         # nach Herunterfahren/Ruhezustand über den Hub keine „offline“-Meldung
 HOT_AFTER_S = 60           # GPU muss so lange zu heiß sein
 HOT_COOLDOWN_S = 1800
+HANG_GPU_PCT = 5            # darunter gilt die GPU als untätig
+HEALTH_REPEAT_S = 86400     # dieselbe Auffälligkeit wird frühestens nach einem Tag erneut gemeldet
+HEALTH_QUIET = {"uptime"}    # nur anzeigen, nicht melden
 HOT_HYSTERESIS = 3         # unter Grenze minus 3 °C gilt als abgekühlt
 SERVICE_RE = re.compile(r"([a-z_]+)\.([a-z0-9_]+)")
 
@@ -110,12 +113,16 @@ class Notifier:
         self.jobs = opts.get("notify_jobs", True) is not False
         self.pc_state = opts.get("notify_pc_state", True) is not False
         self.temp_limit = int(opts.get("notify_temp_c", 85) or 0)
+        try:
+            self.hang_min = max(0, min(int(opts.get("notify_hang_min", 20)), 600))
+        except (TypeError, ValueError):
+            self.hang_min = 20
         self.send = send                      # async (title, message, tag)
         self.recs: dict[str, dict] = {}
 
     def _rec(self, pc: str) -> dict:
         return self.recs.setdefault(pc, {"cur": None, "since": 0.0, "announced": None, "jobs": {}, "hot_since": None,
-                                          "last_hot": 0.0, "expect_off": 0.0})
+                                          "last_hot": 0.0, "expect_off": 0.0, "hang": {}, "health": {}})
 
     def link(self, pc: str, cmd: str) -> str:
         """Deep-Link in die PWA: ``<public_url>/#do=<Befehl>&pc=<PC>``; die PWA fragt vor dem Ausführen einmal nach."""
@@ -153,8 +160,54 @@ class Notifier:
         elif t >= r["expect_off"]:
             self._fire("PC ist offline", f"{name} ist nicht mehr erreichbar.", f"pcc-{pc}-state", self._actions(pc, [("Aufwecken", "wake")]))
 
+    def on_health(self, pc: str, name: str, issues: list[dict]) -> None:
+        """Meldet neue Auffälligkeiten der Gesundheitsprüfung einmal (und nach einem Tag erneut, solange sie bestehen)."""
+        r, t = self._rec(pc), now()
+        seen = {i.get("id") for i in issues if isinstance(i, dict)}
+        for gone in [k for k in r["health"] if k not in seen]:
+            del r["health"][gone]
+        for i in issues:
+            iid = i.get("id") if isinstance(i, dict) else None
+            if not iid or iid in HEALTH_QUIET or t - r["health"].get(iid, -HEALTH_REPEAT_S) < HEALTH_REPEAT_S:
+                continue
+            r["health"][iid] = t
+            self._fire("Gesundheit: " + ("dringend" if i.get("level") == "bad" else "Hinweis"), f"{name}: {str(i.get('text', ''))[:200]}",
+                       f"pcc-{pc}-health-{re.sub(r'[^a-z0-9]+', '-', str(iid).lower())[:40]}", self._actions(pc, [("Dashboard", "tab:dash")]))
+
+    def _hang_check(self, pc: str, name: str, r: dict, snap: dict, t: float) -> None:
+        """Ein Job „läuft“, sein Fortschritt steht seit hang_min Minuten und die GPU ist untätig → vermutlich hängt er."""
+        if self.hang_min <= 0:
+            return
+        util = (snap.get("gpu") or {}).get("util_pct")
+        jobs = snap.get("jobs") or ([snap["job"]] if snap.get("job") else [])
+        running = {}
+        for j in jobs:
+            if isinstance(j, dict) and j.get("job_id") and j.get("state") == "running":
+                running[j["job_id"]] = j
+        for jid in [k for k in r["hang"] if k not in running]:
+            del r["hang"][jid]
+        for jid, j in running.items():
+            prog = j.get("progress")
+            h = r["hang"].get(jid)
+            if h is None or h["prog"] != prog:
+                r["hang"][jid] = {"prog": prog, "since": t, "gpu_max": util if isinstance(util, (int, float)) else 0, "alerted": False}
+                continue
+            if isinstance(util, (int, float)):
+                h["gpu_max"] = max(h["gpu_max"], util)
+            if h["alerted"] or t - h["since"] < self.hang_min * 60:
+                continue
+            if h["gpu_max"] < HANG_GPU_PCT:
+                h["alerted"] = True
+                label = f"{j.get('tool', 'Job')}: {j.get('title') or 'ohne Titel'}"
+                items = ([("Job abbrechen", f"cancel-job:{jid}")] if re.fullmatch(r"[A-Za-z0-9._:-]{1,80}", str(jid)) else []) + [("Dashboard", "tab:dash")]
+                self._fire("KI-Job hängt vielleicht", f"{name} – {label}: seit {int((t - h['since']) // 60)} Min. kein Fortschritt und die GPU ist untätig.",
+                           f"pcc-{pc}-hang-{jid}", self._actions(pc, items))
+            else:
+                h["since"], h["gpu_max"] = t, util if isinstance(util, (int, float)) else 0       # GPU arbeitet noch: weiter beobachten
+
     def on_snapshot(self, pc: str, name: str, snap: dict) -> None:
         r, t = self._rec(pc), now()
+        self._hang_check(pc, name, r, snap, t)
         if self.jobs:
             jobs = snap.get("jobs") or ([snap["job"]] if snap.get("job") else [])
             for j in jobs:

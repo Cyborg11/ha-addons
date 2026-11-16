@@ -134,6 +134,17 @@ class EnergyMeter:
         with self._lock:
             return self._day_wh(pc).get(self._day(self.clock()), 0.0) / 1000.0
 
+    def events(self, pc: str, kind: str, since: float = 0.0, limit: int = 500) -> list[tuple]:
+        """Gespeicherte Spiel-/Job-Läufe (name, tool, t0, t1, wh), neueste zuerst."""
+        if self.db is None:
+            return []
+        with self._lock:
+            try:
+                return [tuple(r) for r in self.db.execute("SELECT name, tool, t0, t1, wh FROM energy_event WHERE pc = ? AND kind = ? AND t1 >= ? ORDER BY t1 DESC LIMIT ?",
+                                                          [pc, kind, int(since), int(limit)])]
+            except sqlite3.Error:
+                return []
+
     def summary(self, pc: str, price_ct_kwh: float = 0.0, days: int = 30, events: int = 8) -> dict:
         days = max(1, min(int(days), 120))
         with self._lock:
