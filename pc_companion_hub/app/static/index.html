@@ -383,7 +383,7 @@
     <div class="panel pad">
       <h3>Galerie <small id="gal_count" class="muted"></small></h3>
       <div class="seg" id="gal_chips" hidden></div>
-      <div class="row"><select id="gal_folder" aria-label="Ordner" hidden></select><button id="gal_reload">Aktualisieren</button></div>
+      <div class="row"><select id="gal_folder" aria-label="Ordner" hidden></select><select id="gal_game" aria-label="Spiel" hidden></select><button id="gal_reload">Aktualisieren</button></div>
       <div id="gal_grid"></div>
       <button id="gal_more" class="primary" hidden>Mehr laden</button>
       <div id="gal_msg"></div>
@@ -566,7 +566,7 @@
 </div>
 
 <div id="viewer" hidden>
-  <div class="vbar"><span id="viewer_title"></span><span><span id="viewer_pos" class="muted"></span><button id="viewer_save" class="primary">Speichern</button><button id="viewer_close">Schließen</button></span></div>
+  <div class="vbar"><span class="vtitle"><b id="viewer_title"></b><small id="viewer_info"></small></span><span><span id="viewer_pos" class="muted"></span><button id="viewer_save" class="primary">Speichern</button><button id="viewer_close">Schließen</button></span></div>
   <div class="vstage">
     <button id="viewer_prev" class="vnav" aria-label="Voriges Bild" hidden>‹</button>
     <img id="viewer_img" alt="">
