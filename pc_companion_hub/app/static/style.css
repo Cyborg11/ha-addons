@@ -272,6 +272,7 @@ body.readonly #progpanel{display:none!important}
 #viewer_pos{margin-right:10px}
 .vtitle{display:flex;flex-direction:column;gap:2px;min-width:0}.vtitle b{font-size:15px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vtitle small{font-size:12px;color:var(--dim)}
 #gal_game{max-width:100%}
+.gcloud{position:absolute;left:5px;bottom:5px;width:18px;height:18px;fill:#fff;stroke:none;filter:drop-shadow(0 0 2px rgba(0,0,0,.8));pointer-events:none}
 .dropzone{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 14px;margin-top:12px;border:2px dashed var(--line);border-radius:16px;color:var(--dim);font-size:13px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
 .dropzone svg{width:30px;height:30px;color:var(--ok)}
 .dropzone:hover,.dropzone:focus-visible,.dropzone.over{border-color:var(--ok);background:rgba(52,232,164,.07);color:var(--fg);outline:0}

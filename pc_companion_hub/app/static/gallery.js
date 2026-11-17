@@ -104,8 +104,8 @@
   function openAt(i) {
     const it = items[i], name = it.name.split("/").pop();
     openViewer({
-      title: it.game || name, filename: name,
-      info: [it.mtime ? fmtDate(it.mtime) : "", it.size ? fmtSize(it.size) : "", it.game ? name : ""].filter(Boolean).join(" · "),
+      title: it.game || (folder === "steam-profile" ? "Steam-Profil" : name), filename: name,
+      info: [it.mtime ? fmtDate(it.mtime) : "", it.size ? fmtSize(it.size) : "", it.game ? name : "", it.online && folder !== "steam-profile" ? "☁ auf dem Steam-Profil" : ""].filter(Boolean).join(" · "),
       load: () => fetchBlob("api/gallery/file?" + q({ folder, name: it.name })),
       nav: {
         pos: i + 1, total,
@@ -128,7 +128,14 @@
       img.alt = it.name;
       const cap = document.createElement("span");
       cap.className = "gcap";
-      cap.textContent = it.game || label;
+      cap.textContent = folder === "steam-profile" ? "Auf dem Profil" : (it.game || label);
+      if (it.online && folder !== "steam-profile") {                   // schon auf dem Steam-Profil: kleine Wolke unten links
+        const cl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        cl.setAttribute("viewBox", "0 0 24 24"); cl.setAttribute("class", "gcloud");
+        cl.innerHTML = '<title>Auf dem Steam-Profil</title><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 10 4 4 0 0 1 17.5 18z"/>';
+        b.append(cl);
+        cap.style.paddingLeft = "26px";
+      }
       b.append(img, cap);
       b.onclick = () => openAt(idx);
       grid.append(b);
