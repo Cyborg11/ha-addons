@@ -93,6 +93,8 @@ def test_gallery_only_passes_known_parameters(client):
     client.get("/api/gallery/file?folder=sig&name=a/b.png&download=true&pc=ki-pc&token=x&path=/etc", headers=MASTER)
     last = client.calls[-1]
     assert last["pc"] == "ki-pc" and last["params"] == {"folder": "sig", "name": "a/b.png", "download": "true"}
+    client.get("/api/gallery?folder=steam-screenshots&game=489830&evil=1", headers=MASTER)
+    assert client.calls[-1]["params"] == {"folder": "steam-screenshots", "game": "489830"}
 
 
 def test_binary_responses_keep_their_content_type(client):

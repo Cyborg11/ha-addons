@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.34.0
+- Galerie: **Spielfilter** für die Steam-Screenshots (Auswahl „Alle Spiele“ oder ein Spiel, mit Anzahl), Spielname auf den Vorschaubildern.
+- Großansicht zeigt Spielname, Datum und Größe über dem Bild (Tippen auf ein Vorschaubild öffnet sie wie bisher; Wischen blättert). Braucht am Agenten die neue Version.
+
 ## 0.33.0
 - Fernbedienung: optional **Bildschirm als Hintergrund** des Touchpads (alle 2 Sekunden ein Screenshot, nur während einer offenen Sitzung und nur mit Screenshot-Funktion am Agenten). Die Live-Bilder werden nicht einzeln protokolliert; das Öffnen der Sitzung steht im Protokoll.
 

@@ -3,7 +3,7 @@
 (function () {
   const $ = id => document.getElementById(id);
   const PAGE = 24;
-  let folder = "", folders = [], items = [], total = 0, loading = false, loadedPc = "", loadedAt = 0;
+  let folder = "", game = "", games = [], folders = [], items = [], total = 0, loading = false, loadedPc = "", loadedAt = 0;
   const thumbs = new Map();                 // Bildname -> Blob-URL (damit Bilder nicht doppelt geladen werden)
   let viewerUrl = null;
 
@@ -17,7 +17,7 @@
   /* ---- Betrachter ---- */
   let vseq = 0, vnav = null;
   // nav (optional): { pos, total, prev(), next() } – Pfeile, Tastatur und Wischen blättern durch die Galerie
-  window.openViewer = function ({ blob, title, filename, load, nav }) {
+  window.openViewer = function ({ blob, title, info, filename, load, nav }) {
     const v = $("viewer"), my = ++vseq;
     if (viewerUrl) { URL.revokeObjectURL(viewerUrl); viewerUrl = null; }
     v.hidden = false;
@@ -26,6 +26,7 @@
     $("viewer_next").hidden = !(nav && nav.next);
     $("viewer_pos").textContent = nav ? nav.pos + " / " + nav.total : "";
     $("viewer_title").textContent = title || "";
+    $("viewer_info").textContent = info || "";
     $("viewer_img").removeAttribute("src");
     const show = b => { if (my !== vseq) return; viewerUrl = URL.createObjectURL(b); $("viewer_img").src = viewerUrl; $("viewer_save").onclick = () => saveBlob(b, filename || "bild.png"); };
     if (blob) show(blob);
@@ -97,10 +98,14 @@
     pump();
   }
 
+  const fmtSize = n => n >= 1048576 ? (n / 1048576).toFixed(1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+  const fmtDate = t => new Date(t * 1000).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
   function openAt(i) {
     const it = items[i], name = it.name.split("/").pop();
     openViewer({
-      title: name, filename: name,
+      title: it.game || name, filename: name,
+      info: [it.mtime ? fmtDate(it.mtime) : "", it.size ? fmtSize(it.size) : "", it.game ? name : ""].filter(Boolean).join(" · "),
       load: () => fetchBlob("api/gallery/file?" + q({ folder, name: it.name })),
       nav: {
         pos: i + 1, total,
@@ -118,12 +123,12 @@
       const idx = base + k, label = it.name.split("/").pop().replace(/\.[^.]+$/, "");
       const b = document.createElement("button");
       b.className = "gtile";
-      b.title = it.name;
+      b.title = (it.game ? it.game + " – " : "") + it.name;
       const img = document.createElement("img");
       img.alt = it.name;
       const cap = document.createElement("span");
       cap.className = "gcap";
-      cap.textContent = label;
+      cap.textContent = it.game || label;
       b.append(img, cap);
       b.onclick = () => openAt(idx);
       grid.append(b);
@@ -139,9 +144,20 @@
     if (few) for (const f of folders) {
       const b = document.createElement("button");
       b.className = "segbtn" + (f === folder ? " on" : ""); b.textContent = f;
-      b.onclick = () => { folder = f; load(true); };
+      b.onclick = () => { folder = f; game = ""; load(true); };
       chips.append(b);
     }
+  }
+
+  // Spielfilter wie bei den Steam-Screenshots (nur der Steam-Ordner liefert eine Spieleliste)
+  function paintGames() {
+    const sel = $("gal_game");
+    sel.hidden = games.length < 2;
+    sel.textContent = "";
+    const all = games.reduce((n, g) => n + g.count, 0);
+    sel.append(new Option("Alle Spiele (" + all + ")", ""));
+    for (const g of games) sel.append(new Option(g.name + " (" + g.count + ")", g.appid));
+    sel.value = game;
   }
 
   async function load(reset) {
@@ -150,14 +166,16 @@
     $("gal_msg").textContent = "";
     try {
       if (reset) { items = []; $("gal_grid").textContent = ""; }
-      const d = await getJson("api/gallery?" + q({ folder, limit: PAGE, offset: items.length }));
+      const d = await getJson("api/gallery?" + q({ folder, game, limit: PAGE, offset: items.length }));
       folders = d.folders; folder = d.folder; total = d.total;
+      if (d.games) games = d.games; else { games = []; game = ""; }
       const base = items.length;
       items = items.concat(d.items);
       addTiles(d.items, base);
       loadedPc = current; loadedAt = Date.now();
       const sel = $("gal_folder");
       paintFolders();
+      paintGames();
       if (sel.options.length !== folders.length) { sel.textContent = ""; for (const f of folders) sel.append(new Option(f, f)); }
       sel.value = folder;
       $("gal_more").hidden = items.length >= total;
@@ -168,9 +186,10 @@
 
   $("gal_more").onclick = () => load(false);
   $("gal_reload").onclick = () => load(true);
-  $("gal_folder").onchange = () => { folder = $("gal_folder").value; load(true); };
+  $("gal_folder").onchange = () => { folder = $("gal_folder").value; game = ""; load(true); };
+  $("gal_game").onchange = () => { game = $("gal_game").value; load(true); };
   window.addEventListener("pcc:pc", () => {
-    folder = ""; folders = []; loadedPc = ""; $("gal_grid").textContent = ""; $("gal_folder").textContent = "";
+    folder = ""; game = ""; games = []; folders = []; loadedPc = ""; $("gal_grid").textContent = ""; $("gal_folder").textContent = "";
     thumbs.forEach(u => URL.revokeObjectURL(u)); thumbs.clear();
   });
 
