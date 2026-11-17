@@ -23,7 +23,7 @@ Mit einem Agenten ab Phase 8 (PCCompanion, `GET /health` meldet `features`) ersc
 |---|---|
 | Energie-Plan, Prozesse, Zwischenablage senden, Bildschirm aus | keine |
 | Programme | `programs:` mit den erlaubten Programmen |
-| Galerie | `gallery.folders:` mit Ausgabeordnern; Vorschaubilder brauchen `Pillow`. Die Steam-Screenshots (`steam-screenshots`) haben einen Spielfilter |
+| Galerie | `gallery.folders:` mit Ausgabeordnern; Vorschaubilder brauchen `Pillow`. Die Steam-Screenshots (`steam-screenshots`) haben einen Spielfilter und eine Wolke für Bilder, die schon auf dem öffentlichen Steam-Profil liegen (Ordner `steam-profile`; Agent-Option `steam.profile` für die Profil-Adresse, `steam.profile_screenshots: false` schaltet es ab) |
 | Spiele (Steam) | wird automatisch erkannt (Steam installiert); Einstellungen unter `steam:` in der `config.yaml` des Agenten. Für „Bilder ändern“ (Cover, Header, Hero, Logo) dort `steam.griddb_key` eintragen: kostenloser API-Schlüssel von steamgriddb.com (Profil → Preferences → API). Ohne Schlüssel lässt sich ein eigenes Bild nur zurücksetzen. Eigene Verknüpfungen („Nicht-Steam-Spiele“) werden ebenfalls angezeigt (`steam.shortcuts: false` schaltet sie ab). |
 | Screenshot | `Pillow` |
 | Dateien am PC (Tab „Dateien“) | `browse.folders:` mit den freigegebenen Ordnern; nur ansehen und herunterladen (bis 100 MB), versteckte Dateien und Verknüpfungen nach außen bleiben unsichtbar; nur mit Vollzugriff, Downloads im Protokoll |

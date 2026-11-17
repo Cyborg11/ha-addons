@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.35.0
+- Galerie: **Wolke** unten links auf Steam-Screenshots, die schon auf dem öffentlichen Steam-Profil liegen, und ein neuer Ordner **steam-profile** mit allen öffentlichen Profil-Screenshots (nur ansehen). Der Agent gleicht im Hintergrund per Bild-Fingerabdruck ab; Voraussetzung: neue Agent-Version, Screenshots öffentlich.
+
 ## 0.34.0
 - Galerie: **Spielfilter** für die Steam-Screenshots (Auswahl „Alle Spiele“ oder ein Spiel, mit Anzahl), Spielname auf den Vorschaubildern.
 - Großansicht zeigt Spielname, Datum und Größe über dem Bild (Tippen auf ein Vorschaubild öffnet sie wie bisher; Wischen blättert). Braucht am Agenten die neue Version.
