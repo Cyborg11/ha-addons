@@ -176,12 +176,18 @@ function render(s) {
     }
   }
 
+  setRing("cpu_util", (c.util_pct || 0) / 100, n(c.util_pct != null ? Math.round(c.util_pct) : null), level(c.util_pct || 0, 85, 95));
+  $("rs_cpu").textContent = c.freq_mhz != null ? (c.freq_mhz / 1000).toFixed(2) + " GHz" : "";
+  setRing("cpu_temp", (c.temp_c || 0) / 100, n(c.temp_c), level(c.temp_c || 0, 75, 90));
+  $("rs_cputemp").textContent = sn.cpu_power_w != null ? Math.round(sn.cpu_power_w) + " W" : "";
   $("cpu_val").textContent = n(c.util_pct != null ? Math.round(c.util_pct) : null);
   $("cpu_freq").textContent = c.freq_mhz != null ? (c.freq_mhz / 1000).toFixed(2) + " GHz" : "–";
   $("cpu_temp").textContent = n(c.temp_c, " °C");
   renderCores(c.per_core_pct || []);
 
   const rf = r.total_mb ? r.used_mb / r.total_mb : 0;
+  setRing("ram", rf, r.total_mb ? Math.round(rf * 100) : "–", level(rf * 100, 85, 95));
+  $("rs_ram").textContent = r.total_mb ? gb(r.used_mb) + " / " + gb(r.total_mb) + " GB" : "";
   $("ram_val").textContent = gb(r.used_mb);
   $("ram_of").textContent = "/ " + gb(r.total_mb) + " GB";
   setBar("bar_ram", rf, level(rf * 100, 85, 95));
