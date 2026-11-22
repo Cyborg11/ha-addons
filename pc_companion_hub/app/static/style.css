@@ -61,6 +61,7 @@ button.primary{background:linear-gradient(135deg,#2bd694,#1fa8c7);color:#04130e;
 
 /* ---------- Dashboard ---------- */
 .hero{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+@media (min-width:1100px) and (orientation:landscape){.hero{grid-template-columns:repeat(6,1fr)}}
 .ring{--c:var(--ok);padding:14px 8px 12px;text-align:center}
 .ring.lv-warn{--c:var(--warn)}.ring.lv-crit{--c:var(--crit)}
 .rwrap{position:relative;width:100%;max-width:150px;margin:0 auto;aspect-ratio:1}
