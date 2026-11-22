@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.38.3
+- Job-Karte unterscheidet nach Zustand: statt „+1 weitere“ steht „1 läuft, 1 wartet“, wartende Jobs erscheinen mit Titel unter dem aktuellen Job (Jobs mit state=queued, z. B. über `job.queued()` im ai-core-Client).
+
 ## 0.38.2
 - Galerie: Ordner **steam-archiv** (alle hochgeladenen Steam-Screenshots lokal gesichert) zeigt den Fortschritt des Hintergrund-Downloads. Braucht die neue Agent-Version und `steam.api_key` + `steam.archive_dir`.
 

@@ -235,8 +235,25 @@ function renderJob(s) {
   $("jbar").style.width = Math.round(j.progress * 100) + "%";
   $("jeta").textContent = j.cancel_requested && (j.state === "running" || j.state === "queued") ? "Abbruch angefordert …" : (j.state === "running" ? fmtEta(j.eta_s) : "");
   $("jcancel").hidden = !(features.includes("job_cancel") && role === "full" && (j.state === "running" || j.state === "queued") && !j.cancel_requested);
-  const more = (s.jobs || []).length - 1;
-  $("jmore").textContent = more > 0 ? "+" + more + " weitere" : "";
+  // weitere Jobs nach Zustand: "1 läuft, 1 wartet"; Wartende stehen mit Titel in einer Liste unter dem aktuellen Job
+  const all = s.jobs || [], run = all.filter(x => x.state === "running"), wait = all.filter(x => x.state === "queued" && x.job_id !== j.job_id);
+  const fin = all.filter(x => x.state === "done" || x.state === "error").length;
+  const parts = [];
+  if (all.length > 1) {
+    if (run.length) parts.push(run.length + " läuft");
+    if (wait.length + (j.state === "queued" ? 1 : 0)) parts.push((wait.length + (j.state === "queued" ? 1 : 0)) + " wartet");
+    if (fin && !parts.length) parts.push(fin + " fertig");
+  }
+  $("jmore").textContent = parts.join(", ");
+  const q = $("jqueue");
+  q.textContent = "";
+  for (const w of wait.slice(0, 4)) {
+    const row = document.createElement("div");
+    row.textContent = "⏳ " + w.tool + (w.title ? ": " + w.title : "") + " – wartet";
+    q.append(row);
+  }
+  if (wait.length > 4) { const m = document.createElement("div"); m.textContent = "+ " + (wait.length - 4) + " weitere wartend"; q.append(m); }
+  q.hidden = !wait.length;
   $("jimg").hidden = !j.has_preview;
   if (j.has_preview) loadPreview(j);
 }
