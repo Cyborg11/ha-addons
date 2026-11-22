@@ -236,9 +236,9 @@
     const sel = $("gal_game");
     sel.hidden = games.length < 2;
     sel.textContent = "";
-    const all = games.reduce((n, g) => n + g.count, 0);
-    sel.append(new Option("Alle Spiele (" + all + ")", ""));
-    for (const g of games) sel.append(new Option(g.name + " (" + g.count + ")", g.appid));
+    const counted = games.every(g => g.count != null);      // das Profil kennt keine Anzahl je Spiel
+    sel.append(new Option(counted ? "Alle Spiele (" + games.reduce((n, g) => n + g.count, 0) + ")" : "Alle Spiele", ""));
+    for (const g of games) sel.append(new Option(counted ? g.name + " (" + g.count + ")" : g.name, g.appid));
     sel.value = game;
   }
 

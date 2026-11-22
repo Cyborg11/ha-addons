@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.38.1
+- Galerie: Spielfilter auch für die Screenshots auf dem Steam-Profil (Spieleliste von der Profilseite, je Spiel die neuesten bis 300). Braucht die neue Agent-Version.
+
 ## 0.38.0
 - Bildbetrachter: **Zoomen** (Zwei-Finger-Pinch, Doppeltippen, Mausrad, Knöpfe +/−, Verschieben per Ziehen) und **Vollbild** (Knopf ⛶ oder Taste F; Leisten ausgeblendet, Tippen blendet sie wieder ein). Blättern per Wischen nur bei 1×. Gilt für Galerie und Screenshot.
 
