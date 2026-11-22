@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.38.5
+- Zurück-Taste in der PWA: schließt zuerst offene Fenster und den Bildbetrachter, geht dann zum vorigen Reiter und verlässt die App erst vom Dashboard aus.
+
 ## 0.38.4
 - Dashboard: oben zusätzlich Ringe für CPU-Last, RAM und CPU-Temperatur (neben GPU-Temperatur, -Last und VRAM), damit alles auf einen Blick sichtbar ist.
 
