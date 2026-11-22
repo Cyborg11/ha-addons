@@ -262,6 +262,9 @@
       sel.value = folder;
       $("gal_more").hidden = items.length >= total;
       $("gal_count").textContent = total ? items.length + " von " + total + " Bildern" : "Keine Bilder gefunden.";
+      const ar = d.archive;                                   // Steam-Archiv: Fortschritt des Hintergrund-Downloads
+      if (ar) $("gal_msg").textContent = ar.error && !ar.complete ? "Archiv: " + ar.downloaded + " von " + ar.total + " geladen – " + ar.error
+        : ar.complete ? "Archiv vollständig: " + ar.downloaded + " Screenshots" : "Archiv lädt im Hintergrund: " + ar.downloaded + " von " + ar.total;
     } catch (e) { $("gal_msg").textContent = e.message; }
     loading = false;
   }

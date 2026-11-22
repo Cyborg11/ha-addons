@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.38.2
+- Galerie: Ordner **steam-archiv** (alle hochgeladenen Steam-Screenshots lokal gesichert) zeigt den Fortschritt des Hintergrund-Downloads. Braucht die neue Agent-Version und `steam.api_key` + `steam.archive_dir`.
+
 ## 0.38.1
 - Galerie: Spielfilter auch für die Screenshots auf dem Steam-Profil (Spieleliste von der Profilseite, je Spiel die neuesten bis 300). Braucht die neue Agent-Version.
 
