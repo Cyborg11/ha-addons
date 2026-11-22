@@ -1,7 +1,7 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/base:latest
 FROM ${BUILD_FROM}
 
-RUN apk add --no-cache python3 py3-pip \
+RUN apk add --no-cache python3 py3-pip tailscale \
     && pip install --no-cache-dir --break-system-packages \
         "fastapi>=0.110" "uvicorn[standard]>=0.29" "websockets>=12" "httpx>=0.27" "segno>=1.6" "tzdata"
 

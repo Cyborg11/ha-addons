@@ -108,6 +108,8 @@ async def _no_send(title, message, tag=None):
 
 def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> FastAPI:
     opts = load_options() if opts is None else opts
+    if not opts.get("public_url") and os.environ.get("HUB_TS_URL"):          # vom Start-Skript, wenn der eigene Tailscale-Knoten läuft
+        opts = {**opts, "public_url": os.environ["HUB_TS_URL"]}
     clients: set = set()
     hubs: dict[str, Hub] = {}
     for pid, pname, popts in build_pcs(opts):

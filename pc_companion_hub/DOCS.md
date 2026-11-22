@@ -95,6 +95,8 @@ Gekoppelte Geräte siehst und entfernst du unter „Geräte & Anmeldung“. Wer 
 
 ## HTTPS / PWA-Installation
 
+**Am einfachsten: Tailscale im Add-on.** Im Tailscale-Adminbereich unter DNS **MagicDNS** und **HTTPS-Zertifikate** einschalten, unter Settings → Keys einen **Auth-Key** erzeugen (reusable, nicht ephemeral) und ihn als `tailscale_authkey` in die Add-on-Optionen eintragen (optional `tailscale_hostname`, Standard `pc-companion`). Nach dem Neustart steht im Log „Hub per HTTPS erreichbar unter https://…“. Diese Adresse am Handy öffnen und installieren. Der Hub läuft dazu als eigener Tailscale-Knoten (Userspace, nur im Tailnet, kein Funnel); die Anmeldung wird in `/data/tailscale` gespeichert. Der Schlüssel wird danach nicht mehr gebraucht und kann aus den Optionen entfernt werden.
+
 Service Worker und „Zur Startseite hinzufügen“ funktionieren in Chrome nur über HTTPS. Empfohlen: Tailscale (`tailscale serve --bg 8099` auf dem Pi, dann `https://<pi>.<tailnet>.ts.net`). Über reines HTTP im LAN funktioniert das Dashboard, aber ohne PWA-Installation.
 
 ## Dateitransfer
