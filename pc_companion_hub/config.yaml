@@ -1,5 +1,5 @@
 name: "PC-Companion Hub"
-version: "0.36.0"
+version: "0.37.0"
 slug: pc_companion_hub
 description: "Dashboard und Wake-on-LAN für den PC-Companion-Agenten (Gaming-PC)"
 url: "https://github.com/Cyborg11/PCCompanion"
@@ -40,6 +40,8 @@ options:
   notify_temp_c: 85
   notify_hang_min: 20
   public_url: ""
+  tailscale_authkey: ""
+  tailscale_hostname: "pc-companion"
   tools: []
 schema:
   agent_host: str?
@@ -72,6 +74,8 @@ schema:
   notify_temp_c: int(0,120)?
   notify_hang_min: int(0,600)?
   public_url: str?
+  tailscale_authkey: password?
+  tailscale_hostname: str?
   tools:
     - name: str
       url: str

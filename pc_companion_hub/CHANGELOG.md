@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.37.0
+- **HTTPS per Tailscale direkt im Hub-Add-on** (optional): mit `tailscale_authkey` startet der Hub einen eigenen Tailscale-Knoten im Userspace-Modus (kein Eingriff in das Netzwerk des Hosts) und stellt sich unter `https://pc-companion.<tailnet>.ts.net` mit echtem Zertifikat bereit. Damit lässt sich die PWA ohne Chrome-Schalter und ohne Adressleiste installieren. `public_url` wird daraus automatisch vorbelegt, wenn nicht gesetzt. Ohne Schlüssel ändert sich nichts.
+
 ## 0.36.0
 - Neuer Reiter **Claude**: Übersicht der Claude-Code-Sitzungen am PC (Name, Projekt, Zweig, arbeitet/wartet), was sie gerade tun (letztes Werkzeug, Anfang der letzten Antwort), ihre Aufgabenliste und die Unter-Agenten (laufend/fertig). Aktualisiert sich alle 5 Sekunden; nur Vollzugriff, nur Anzeige. Braucht die neue Agent-Version (Feature `claude_code`).
 

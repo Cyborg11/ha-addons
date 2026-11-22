@@ -232,3 +232,10 @@ def test_websocket_guessing_counts_too(client):
 def test_security_headers_are_set(client):
     r = client.get("/healthz")
     assert r.headers["x-content-type-options"] == "nosniff" and r.headers["referrer-policy"] == "no-referrer"
+
+
+def test_public_url_falls_back_to_the_own_tailscale_address(tmp_path, monkeypatch):
+    monkeypatch.setenv("HUB_TS_URL", "https://pc-companion.tail1234.ts.net")
+    with TestClient(create_app(dict(OPTS, public_url=""), data_dir=tmp_path / "ts")) as c:
+        r = c.post("/api/pair", headers={"Authorization": "Bearer " + OPTS["ui_token"]}, json={})
+        assert r.status_code == 200 and r.json()["url"].startswith("https://pc-companion.tail1234.ts.net/#pair=")
