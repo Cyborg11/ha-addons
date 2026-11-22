@@ -28,6 +28,7 @@
     $("viewer_title").textContent = title || "";
     $("viewer_info").textContent = info || "";
     $("viewer_img").removeAttribute("src");
+    resetZoom();
     const show = b => { if (my !== vseq) return; viewerUrl = URL.createObjectURL(b); $("viewer_img").src = viewerUrl; $("viewer_save").onclick = () => saveBlob(b, filename || "bild.png"); };
     if (blob) show(blob);
     else if (load) {
@@ -38,15 +39,85 @@
   const step = d => { const f = vnav && (d < 0 ? vnav.prev : vnav.next); if (f) f(); };
   $("viewer_prev").onclick = () => step(-1);
   $("viewer_next").onclick = () => step(1);
-  let sx = null;
-  $("viewer").addEventListener("touchstart", e => { sx = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
-  $("viewer").addEventListener("touchend", e => {
-    if (sx == null) return;
-    const dx = e.changedTouches[0].clientX - sx; sx = null;
-    if (Math.abs(dx) > 60) step(dx > 0 ? -1 : 1);
-  }, { passive: true });
+  /* Zoom: Zwei-Finger-Pinch, Doppeltipp, Mausrad, Knöpfe +/−; verschieben per Ziehen; bei 1× wischen = blättern; Vollbild blendet die Leisten aus */
+  const MAXZ = 8;
+  let zs = 1, zx = 0, zy = 0;
+  const ptrs = new Map();
+  let drag = null, pinch = null, lastTap = 0, tapTimer = 0;
+  const vimg = $("viewer_img"), vstage = document.querySelector("#viewer .vstage");
+  function applyZoom() {
+    const w = vstage.clientWidth, h = vstage.clientHeight;
+    const mx = Math.max(0, (zs - 1) * w / 2), my = Math.max(0, (zs - 1) * h / 2);
+    zx = Math.max(-mx, Math.min(mx, zx)); zy = Math.max(-my, Math.min(my, zy));
+    vimg.style.transform = zs === 1 ? "" : "translate(" + zx + "px," + zy + "px) scale(" + zs + ")";
+    vstage.classList.toggle("zoomed", zs > 1);
+    $("viewer_zoomout").disabled = zs <= 1; $("viewer_zoomin").disabled = zs >= MAXZ;
+  }
+  function resetZoom() { zs = 1; zx = zy = 0; ptrs.clear(); drag = pinch = null; applyZoom(); }
+  // Zoom um einen Punkt (Bildschirm-Koordinaten), damit der Punkt unter dem Finger bleibt
+  function zoomAt(ns, cx, cy) {
+    ns = Math.max(1, Math.min(MAXZ, ns));
+    const r = vstage.getBoundingClientRect(), px = cx - (r.left + r.width / 2), py = cy - (r.top + r.height / 2), k = ns / zs;
+    zx = px - (px - zx) * k; zy = py - (py - zy) * k; zs = ns;
+    if (zs === 1) zx = zy = 0;
+    applyZoom();
+  }
+  function setClean(on) {
+    $("viewer").classList.toggle("vclean", on);
+    if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }
+  function toggleFull() {
+    const v = $("viewer"), on = !v.classList.contains("vclean");
+    setClean(on);
+    if (on && v.requestFullscreen) v.requestFullscreen().catch(() => {});
+  }
+  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) $("viewer").classList.remove("vclean"); });
+  $("viewer_full").onclick = toggleFull;
+  $("viewer_zoomin").onclick = () => { const r = vstage.getBoundingClientRect(); zoomAt(zs * 1.6, r.left + r.width / 2, r.top + r.height / 2); };
+  $("viewer_zoomout").onclick = () => { const r = vstage.getBoundingClientRect(); zoomAt(zs / 1.6, r.left + r.width / 2, r.top + r.height / 2); };
+  vstage.addEventListener("wheel", e => { e.preventDefault(); zoomAt(zs * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX, e.clientY); }, { passive: false });
+  vstage.addEventListener("pointerdown", e => {
+    if (e.target.closest(".vnav")) return;
+    vstage.setPointerCapture(e.pointerId);
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: zs }; drag = null;
+    } else if (ptrs.size === 1) drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, moved: false };
+  });
+  vstage.addEventListener("pointermove", e => {
+    const p = ptrs.get(e.pointerId); if (!p) return;
+    p.x = e.clientX; p.y = e.clientY;
+    if (pinch && ptrs.size >= 2) {
+      const [a, b] = [...ptrs.values()];
+      zoomAt(pinch.s * (Math.hypot(a.x - b.x, a.y - b.y) / pinch.d), (a.x + b.x) / 2, (a.y + b.y) / 2);
+    } else if (drag) {
+      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 8) drag.moved = true;
+      if (zs > 1) { zx += e.clientX - drag.x; zy += e.clientY - drag.y; applyZoom(); }
+      drag.x = e.clientX; drag.y = e.clientY;
+    }
+  });
+  const endPtr = e => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.delete(e.pointerId);
+    if (pinch) {
+      if (ptrs.size < 2) { pinch = null; const rest = [...ptrs.values()][0]; drag = rest ? { x: rest.x, y: rest.y, x0: rest.x, y0: rest.y, moved: true } : null; }
+      return;
+    }
+    const d = drag; drag = null;
+    if (!d || e.type === "pointercancel") return;
+    const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+    if (!d.moved) {                                    // Tippen: zweimal = Zoom umschalten, einmal im Vollbild = Leisten zurück
+      const now = Date.now();
+      if (now - lastTap < 300) { clearTimeout(tapTimer); lastTap = 0; if (zs > 1) { zs = 1; zx = zy = 0; applyZoom(); } else zoomAt(2.5, e.clientX, e.clientY); }
+      else { lastTap = now; clearTimeout(tapTimer); tapTimer = setTimeout(() => { if ($("viewer").classList.contains("vclean")) setClean(false); }, 300); }
+    } else if (zs === 1 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx > 0 ? -1 : 1);
+  };
+  vstage.addEventListener("pointerup", endPtr);
+  vstage.addEventListener("pointercancel", endPtr);
   function closeViewer() {
     vseq++; vnav = null;
+    setClean(false); resetZoom();
     $("viewer").hidden = true;
     if (viewerUrl) { URL.revokeObjectURL(viewerUrl); viewerUrl = null; }
   }
@@ -65,6 +136,10 @@
     if (e.key === "Escape") closeViewer();
     else if (e.key === "ArrowLeft") step(-1);
     else if (e.key === "ArrowRight") step(1);
+    else if (e.key === "+" || e.key === "=") $("viewer_zoomin").click();
+    else if (e.key === "-") $("viewer_zoomout").click();
+    else if (e.key === "0") resetZoom();
+    else if (e.key === "f" || e.key === "F") toggleFull();
   });
 
   /* ---- Galerie ---- */
