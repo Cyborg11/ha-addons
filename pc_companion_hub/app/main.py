@@ -102,7 +102,7 @@ def clean_base(base) -> str | None:
     return base if re.fullmatch(r"https?://[^\s<>\"']{1,200}", base) else None
 
 
-async def _no_send(title, message, tag=None):
+async def _no_send(title, message, tag=None, actions=None):
     return False, "nicht eingerichtet"
 
 

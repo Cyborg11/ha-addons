@@ -291,3 +291,9 @@ def test_ha_notifier_sends_actions_and_click_target():
     data = seen["body"]["data"]
     assert data["tag"] == "t1" and data["actions"] == acts and data["url"] == BASE + "/" and data["clickAction"] == BASE + "/"
     assert asyncio.run(ha.send("x", "y", "t2"))[0] is True and seen["body"]["data"] == {"tag": "t2"}      # ohne Aktionen wie bisher
+
+
+def test_unconfigured_notify_service_accepts_actions(tmp_path):
+    import asyncio
+    from app import main as hub_main
+    assert asyncio.run(hub_main._no_send("t", "m", "tag", [{"action": "URI"}]))[0] is False
