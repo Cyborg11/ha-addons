@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.36.0
+- Neuer Reiter **Claude**: Übersicht der Claude-Code-Sitzungen am PC (Name, Projekt, Zweig, arbeitet/wartet), was sie gerade tun (letztes Werkzeug, Anfang der letzten Antwort), ihre Aufgabenliste und die Unter-Agenten (laufend/fertig). Aktualisiert sich alle 5 Sekunden; nur Vollzugriff, nur Anzeige. Braucht die neue Agent-Version (Feature `claude_code`).
+
 ## 0.35.0
 - Galerie: **Wolke** unten links auf Steam-Screenshots, die schon auf dem öffentlichen Steam-Profil liegen, und ein neuer Ordner **steam-profile** mit allen öffentlichen Profil-Screenshots (nur ansehen). Der Agent gleicht im Hintergrund per Bild-Fingerabdruck ab; Voraussetzung: neue Agent-Version, Screenshots öffentlich.
 
