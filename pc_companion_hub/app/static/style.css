@@ -270,6 +270,11 @@ body.readonly #progpanel{display:none!important}
 .vnav:active{background:rgba(255,255,255,.18)}
 @media (hover:none){.vnav{opacity:.55}}
 #viewer_pos{margin-right:10px}
+#viewer .vstage{overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+#viewer .vstage img{transform-origin:center center;-webkit-user-drag:none;will-change:transform}
+#viewer .vstage.zoomed{cursor:grab}#viewer .vstage.zoomed .vnav{display:none}
+.vbar button:disabled{opacity:.35}
+#viewer.vclean{padding:0}#viewer.vclean .vbar,#viewer.vclean .vnav{display:none}
 .vtitle{display:flex;flex-direction:column;gap:2px;min-width:0}.vtitle b{font-size:15px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vtitle small{font-size:12px;color:var(--dim)}
 #gal_game{max-width:100%}
 .gcloud{position:absolute;left:5px;bottom:5px;width:18px;height:18px;fill:#fff;stroke:none;filter:drop-shadow(0 0 2px rgba(0,0,0,.8));pointer-events:none}

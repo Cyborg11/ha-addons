@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.38.0
+- Bildbetrachter: **Zoomen** (Zwei-Finger-Pinch, Doppeltippen, Mausrad, Knöpfe +/−, Verschieben per Ziehen) und **Vollbild** (Knopf ⛶ oder Taste F; Leisten ausgeblendet, Tippen blendet sie wieder ein). Blättern per Wischen nur bei 1×. Gilt für Galerie und Screenshot.
+
 ## 0.37.1
 - Fix: Ohne eingerichteten `notify_service` brach die Gesundheitsprüfung (und jede Meldung mit Knöpfen) mit „_no_send() takes from 2 to 3 positional arguments“ ab. Der Platzhalter für „nicht eingerichtet“ nimmt jetzt auch die Aktions-Knöpfe an.
 
