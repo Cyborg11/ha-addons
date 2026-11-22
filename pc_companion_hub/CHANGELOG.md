@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.37.1
+- Fix: Ohne eingerichteten `notify_service` brach die Gesundheitsprüfung (und jede Meldung mit Knöpfen) mit „_no_send() takes from 2 to 3 positional arguments“ ab. Der Platzhalter für „nicht eingerichtet“ nimmt jetzt auch die Aktions-Knöpfe an.
+
 ## 0.37.0
 - **HTTPS per Tailscale direkt im Hub-Add-on** (optional): mit `tailscale_authkey` startet der Hub einen eigenen Tailscale-Knoten im Userspace-Modus (kein Eingriff in das Netzwerk des Hosts) und stellt sich unter `https://pc-companion.<tailnet>.ts.net` mit echtem Zertifikat bereit. Damit lässt sich die PWA ohne Chrome-Schalter und ohne Adressleiste installieren. `public_url` wird daraus automatisch vorbelegt, wenn nicht gesetzt. Ohne Schlüssel ändert sich nichts.
 
