@@ -500,6 +500,10 @@ def create_app(opts: dict | None = None, data_dir: str | Path | None = None) -> 
         require_pin(request)
         return await relay(request, hub, "POST", f"/api/processes/{pid}/kill", what="Prozess beendet", detail=f"PID {pid}", timeout=20.0)
 
+    @app.get("/api/claude", dependencies=[Depends(require_write)])
+    async def claude_overview(request: Request, hub: Hub = Depends(get_hub)):
+        return await relay(request, hub, "GET", "/api/claude")
+
     @app.get("/api/gallery", dependencies=[Depends(require_ui_token)])
     async def gallery_list(request: Request, hub: Hub = Depends(get_hub)):
         return await relay(request, hub, "GET", "/api/gallery", params=take(request, GALLERY_PARAMS))

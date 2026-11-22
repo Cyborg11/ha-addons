@@ -274,3 +274,13 @@ def test_guard_rejects_bad_parameters_before_calling_the_agent(client):
         assert client.get("/api/guard?" + q, headers=MASTER).status_code == 400, q
     assert len(client.calls) == n
     assert client.get("/api/guard?for=program&id=comfyui", headers=MASTER).status_code == 200
+
+
+def test_claude_overview_needs_full_access_and_is_relayed(client):
+    assert client.get("/api/claude").status_code == 401
+    code = client.post("/api/pair", headers=MASTER, json={"base": "http://x", "role": "view"}).json()["code"]
+    view = {"Authorization": "Bearer " + client.post("/api/pair/redeem", json={"code": code}).json()["token"]}
+    assert client.get("/api/claude", headers=view).status_code == 403
+    n = len(client.calls)
+    client.get("/api/claude", headers=MASTER)
+    assert len(client.calls) == n + 1 and client.calls[-1]["path"] == "/api/claude"

@@ -7,7 +7,7 @@
   history.replaceState(null, "", location.pathname + location.search);          // der Befehl darf nicht bei jedem Neuladen wieder laufen
   let cmd = "", pcId = "";
   try { cmd = decodeURIComponent(m[1]); pcId = decodeURIComponent(m[2] || ""); } catch (e) { return; }
-  const TABS = ["dash", "tools", "ctrl", "gallery", "steam", "files"];
+  const TABS = ["dash", "tools", "ctrl", "gallery", "steam", "claude", "files"];
   const ID = /^[A-Za-z0-9._:-]{1,80}$/;
   let done = false;
 
