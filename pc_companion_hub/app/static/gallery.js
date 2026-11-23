@@ -3,7 +3,7 @@
 (function () {
   const $ = id => document.getElementById(id);
   const PAGE = 24;
-  let folder = "", game = "", games = [], folders = [], items = [], total = 0, loading = false, loadedPc = "", loadedAt = 0;
+  let folder = "", game = "", sort = (store.get("pcc_gsort") === "asc" ? "asc" : "desc"), games = [], folders = [], items = [], total = 0, loading = false, loadedPc = "", loadedAt = 0;
   const thumbs = new Map();                 // Bildname -> Blob-URL (damit Bilder nicht doppelt geladen werden)
   let viewerUrl = null;
 
@@ -248,7 +248,7 @@
     $("gal_msg").textContent = "";
     try {
       if (reset) { items = []; $("gal_grid").textContent = ""; }
-      const d = await getJson("api/gallery?" + q({ folder, game, limit: PAGE, offset: items.length }));
+      const d = await getJson("api/gallery?" + q({ folder, game, sort: sort === "asc" ? "asc" : "", limit: PAGE, offset: items.length }));
       folders = d.folders; folder = d.folder; total = d.total;
       if (d.games) games = d.games; else { games = []; game = ""; }
       const base = items.length;
@@ -273,6 +273,8 @@
   $("gal_reload").onclick = () => load(true);
   $("gal_folder").onchange = () => { folder = $("gal_folder").value; game = ""; load(true); };
   $("gal_game").onchange = () => { game = $("gal_game").value; load(true); };
+  $("gal_sort").value = sort;
+  $("gal_sort").onchange = () => { sort = $("gal_sort").value === "asc" ? "asc" : "desc"; store.set("pcc_gsort", sort); load(true); };
   window.addEventListener("pcc:pc", () => {
     folder = ""; game = ""; games = []; folders = []; loadedPc = ""; $("gal_grid").textContent = ""; $("gal_folder").textContent = "";
     thumbs.forEach(u => URL.revokeObjectURL(u)); thumbs.clear();
