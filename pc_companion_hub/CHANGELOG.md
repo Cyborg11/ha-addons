@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.38.8
+- Bildbetrachter: Doppeltippen/Pinch auf den schwarzen Rand zoomte das Bild aus dem Rahmen heraus (Leisten verdeckt, Bild am oberen Rand). Verschieben ist jetzt auf die tatsächliche Bildgröße begrenzt, ein kleiner Zoom lässt das Bild mittig.
+
 ## 0.38.7
 - Steam: Spiele lassen sich aus dem Detailblatt **deinstallieren** (PIN-geschützt; der Agent öffnet `steam://uninstall`, Steam fragt am PC noch einmal nach, erst dann wird gelöscht). Der Knopf nennt den frei werdenden Speicher. Auf den Kacheln steht jetzt die Spielgröße. Braucht die neue Agent-Version (Feature `steam_uninstall`).
 
