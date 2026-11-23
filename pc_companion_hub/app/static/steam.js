@@ -77,6 +77,7 @@
       const cap = document.createElement("span");
       cap.className = "gcap"; cap.textContent = g.name;
       b.append(frame, cap);
+      if (g.size_gb) { const sz = document.createElement("span"); sz.className = "gsize"; sz.textContent = fmtGb(g.size_gb); b.append(sz); }
       b.onclick = () => openSheet(g.appid);
       img._load = () => loadArt(img, g.appid, "cover", 300, g.art_ver, covers, ok => { if (ok) ph.hidden = true; });
       grid.append(b);
@@ -161,6 +162,8 @@
     $("st_update_go").hidden = $("st_update").hidden && !(pu && pu.appid === g.appid);
     $("st_update_go").textContent = pu && pu.appid === g.appid ? "Startet nach dem Update – abbrechen" : "Update laden und danach starten";
     $("st_stop").hidden = !isRun;
+    $("st_uninstall").hidden = !(features.includes("steam_uninstall") && !g.non_steam && !isRun && g.launchable && g.state !== "updating" && g.state !== "downloading");
+    $("st_uninstall").textContent = "Deinstallieren" + (g.size_gb ? " (" + fmtGb(g.size_gb) + " frei)" : "");
     const sk = g.appid + "|" + g.art_ver;                            // auch ein getauschtes Cover im Detailblatt neu laden
     if (sheetArt !== sk) {
       sheetArt = sk;
@@ -190,6 +193,19 @@
     try { const d = await call("POST", "api/steam/games/" + appid + "/stop"); out.textContent = "Beendet (" + d.processes + " Prozesse)."; }
     catch (e) { out.textContent = e.message; }
   }
+  $("st_uninstall").onclick = async () => {
+    const g = games.find(x => x.appid === openId);
+    if (!g) return;
+    const sz = g.size_gb ? " Das gibt " + fmtGb(g.size_gb) + " Speicher frei." : "";
+    if (!confirm("„" + g.name + "“ deinstallieren?" + sz + "\n\nSteam fragt danach am PC noch einmal nach; erst nach dieser Bestätigung wird etwas gelöscht.")) return;
+    const msg = $("st_sheet_msg");
+    msg.textContent = "Sende an Steam …";
+    try {
+      const d = await call("POST", "api/steam/games/" + g.appid + "/uninstall");
+      msg.textContent = d.note || "Steam fragt am PC nach.";
+      setTimeout(async () => { await load(true); paintGrid(); if (!$("st_sheet").hidden) paintSheet(); }, 20000);
+    } catch (e) { msg.textContent = e.message; }
+  };
   $("st_update").onclick = async () => {
     const g = games.find(x => x.appid === openId);
     if (!g) return;
