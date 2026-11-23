@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.38.6
+- Galerie: Sortierung nach Datum, neueste oder älteste zuerst (wird gemerkt). Gilt auch für Steam-Profil und Archiv. Braucht die neue Agent-Version.
+
 ## 0.38.5
 - Zurück-Taste in der PWA: schließt zuerst offene Fenster und den Bildbetrachter, geht dann zum vorigen Reiter und verlässt die App erst vom Dashboard aus.
 

@@ -40,7 +40,7 @@ CRITICAL_ACTIONS = {"shutdown", "restart", "sleep", "standby"}        # mit conf
 # Abfrageparameter, die je Funktion an den Agenten weitergereicht werden dürfen
 API_LOCK_AFTER = 20        # falsche Bearer-Token je Adresse, dann 15 Minuten Sperre
 API_GLOBAL_LIMIT = 300     # insgesamt pro Stunde
-GALLERY_PARAMS = ("folder", "name", "w", "limit", "offset", "download", "game")
+GALLERY_PARAMS = ("folder", "name", "w", "limit", "offset", "download", "game", "sort")
 STEAM_KINDS = ("cover", "header", "hero", "logo", "icon")
 STEAM_OPEN = {"bigpicture": "Big Picture", "downloads": "Downloads öffnen", "library": "Bibliothek öffnen", "exit": "Steam beendet"}
 
