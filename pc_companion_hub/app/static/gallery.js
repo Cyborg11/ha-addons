@@ -47,7 +47,8 @@
   const vimg = $("viewer_img"), vstage = document.querySelector("#viewer .vstage");
   function applyZoom() {
     const w = vstage.clientWidth, h = vstage.clientHeight;
-    const mx = Math.max(0, (zs - 1) * w / 2), my = Math.max(0, (zs - 1) * h / 2);
+    const nw = vimg.naturalWidth || w, nh = vimg.naturalHeight || h, f = Math.min(w / nw, h / nh);       // angezeigte Bildgröße (object-fit: contain)
+    const mx = Math.max(0, (nw * f * zs - w) / 2), my = Math.max(0, (nh * f * zs - h) / 2);              // nur so weit verschieben, wie das Bild den Rahmen überragt
     zx = Math.max(-mx, Math.min(mx, zx)); zy = Math.max(-my, Math.min(my, zy));
     vimg.style.transform = zs === 1 ? "" : "translate(" + zx + "px," + zy + "px) scale(" + zs + ")";
     vstage.classList.toggle("zoomed", zs > 1);
