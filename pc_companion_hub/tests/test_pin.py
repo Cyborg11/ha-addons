@@ -15,7 +15,7 @@ from app.main import create_app
 MASTER = {"Authorization": "Bearer master"}
 PIN = {"X-Confirm-PIN": "4711"}
 CRITICAL = [("POST", "/api/action/shutdown"), ("POST", "/api/action/restart"), ("POST", "/api/action/sleep"), ("POST", "/api/action/standby"),
-            ("POST", "/api/processes/12/kill"), ("POST", "/api/programs/comfy/stop"), ("POST", "/api/steam/games/730/stop")]
+            ("POST", "/api/processes/12/kill"), ("POST", "/api/programs/comfy/stop"), ("POST", "/api/steam/games/730/stop"), ("POST", "/api/steam/games/730/uninstall")]
 HARMLESS = [("POST", "/api/action/lock"), ("POST", "/api/action/mute"), ("POST", "/api/action/monitor_off"), ("POST", "/api/programs/comfy/start"),
             ("POST", "/api/job/j1/cancel"), ("POST", "/api/steam/games/730/launch"), ("POST", "/api/wake")]
 

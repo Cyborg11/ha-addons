@@ -144,7 +144,7 @@ def test_steam_reads_are_open_to_view_devices_but_control_is_not(client):
     for path in ("/api/steam/status", "/api/steam/games?sort=name&q=x", "/api/steam/games/730", "/api/steam/art/730/cover?w=200"):
         assert client.get(path, headers=h).status_code == 200, path
     n = len(client.calls)
-    for path in ("/api/steam/games/730/launch", "/api/steam/games/730/stop", "/api/steam/open/exit"):
+    for path in ("/api/steam/games/730/launch", "/api/steam/games/730/stop", "/api/steam/games/730/uninstall", "/api/steam/open/exit"):
         assert client.post(path, headers=h).status_code == 403, path
     assert len(client.calls) == n
     assert client.get("/api/steam/games").status_code == 401 and client.post("/api/steam/games/730/launch").status_code == 401
